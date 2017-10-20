@@ -6,7 +6,7 @@ The intention of this toolset is to provide sought after functionality for Houdi
 
 === INSTALLATION ===
 
-- Please place this entire SDM_Tools subdirectory in a location on a network drive, so that it can follow you around computer to computer. Do not extract any of the contents.
+- Please place this entire SDMTools subdirectory in a location on a network drive, so that it can follow you around computer to computer. Do not extract any of the contents.
 
 - Execute the 'install.py' python script from a shell, i.e.:
 
