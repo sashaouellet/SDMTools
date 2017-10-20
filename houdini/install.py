@@ -5,8 +5,9 @@ from os.path import expanduser
 
 def main():
 	home = expanduser('~')
-	toolsLoc = os.path.split(sys.argv[0])[0]
-	regx = re.compile(r'HOUDINI_PATH\s*=\s*"*([\w\\\/]+);&')
+	pathname = os.path.dirname(sys.argv[0])
+	toolsLoc = os.path.abspath(pathname)
+	regx = re.compile(r'HOUDINI_PATH\s*=\s*"*([\w\\\/;&-_\s]+)')
 	houdiniEnvPath = os.path.join(home, 'houdini16.0', 'houdini.env')
 	_, tmp = mkstemp()
 	
@@ -20,11 +21,16 @@ def main():
 			if match:
 				oldPath = match.group(1)
 				newPath = '{};{}'.format(oldPath, toolsLoc)
+				pathParts = oldPath.split(';')
 				
-				output.write('HOUDINI_PATH = "{};&"'.format(newPath))
+				pathParts.append(toolsLoc)
+
+				pathParts = list(set(pathParts))
+							
+				output.write('HOUDINI_PATH = "{};&"'.format(';'.join(pathParts).replace(';&', '')))
 				replacedPath = True
-			
-			output.write(l)
+			else:		
+				output.write(l)
 		
 		# If we didn't find HOUDINI_PATH originally, we'll write it at the end
 		if not replacedPath:
