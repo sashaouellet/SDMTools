@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shelfDocument>
+  <!-- This file contains definitions of shelves, toolbars, and tools.
+ It should not be hand-edited when it is being used by the application.
+ Note, that two definitions of the same element are not allowed in
+ a single file. -->
+
+  <toolshelf name="com.sashaouellet::sdm_tools" label="SDM Tools">
+    <memberTool name="com.sashaouellet::SavePrefsToStuhome"/>
+    <memberTool name="com.sashaouellet::MultiFlipbook"/>
+    <memberTool name="com.sashaouellet::CleanSubnet"/>
+    <memberTool name="com.sashaouellet::CalculateMocapLocomotion"/>
+  </toolshelf>
+
+  <tool name="com.sashaouellet::MultiFlipbook" label="Multi Flipbook" icon="hicon:/SVGIcons.index?BUTTONS_capture.svg">
+    <script scriptType="python"><![CDATA[import os
+
+cameras = [c for c in hou.node('/').allSubChildren() if c.type().name() == 'cam']
+selected = [cameras[i] for i in hou.ui.selectFromList([c.name() for c in cameras], message='Select the camera(s) to flipbook from', title='Camera Selection', column_header='Cameras')]
+outputBase = hou.ui.selectFile(title='Save Sequence(s) as...', collapse_sequences=True, file_type=hou.fileType.Image, chooser_mode=hou.fileChooserMode.Write)
+
+if not outputBase or '$F' not in outputBase:
+    hou.ui.displayMessage('Invalid output path specified (Make sure to use $F, $F4, etc. notation)', severity=hou.severityType.Error)
+    raise SystemExit
+
+splitBase = os.path.split(outputBase)
+sceneViewer = hou.ui.curDesktop().paneTabOfType(hou.paneTabType.SceneViewer)
+
+frameStart = int(sceneViewer.flipbookSettings().frameRange()[0])
+frameEnd = int(sceneViewer.flipbookSettings().frameRange()[1])
+frameInc = sceneViewer.flipbookSettings().frameIncrement()
+
+frameInput = hou.ui.readMultiInput('Select frame range for flipbook(s)', ['Start', 'End', 'Inc'], initial_contents=[str(frameStart), str(frameEnd), str(frameInc)])
+
+frameStart = int(frameInput[1][0])
+frameEnd = int(frameInput[1][1])
+frameInc = int(frameInput[1][2])
+
+if not sceneViewer:
+    hou.ui.displayMessage('Could not find Scene Viewer pane tab, please create it and try again', severity=hou.severityType.Error)
+    raise SystemExit
+    
+viewport = [vp for vp in sceneViewer.viewports() if vp.type() == hou.geometryViewportType.Perspective][0]
+
+if not viewport:
+    hou.ui.displayMessage('Could not find the "Persp" viewport', severity=hou.severityType.Error)
+    raise SystemExit
+    
+viewportFullName = '{}.{}.world.{}'.format(hou.ui.curDesktop().name(), sceneViewer.name(), viewport.name())
+cameraOutputs = []
+
+for camera in selected:
+    cameraOutputs.append((camera, os.path.join(splitBase[0], '{}_{}'.format(camera.name(), splitBase[1]))))
+
+for f in range(frameStart, frameEnd + 1, frameInc):
+    for camera, output in cameraOutputs:
+        viewport.setCamera(camera)
+        
+        hou.hscript("viewwrite -f {} {} {} '{}'".format(f, f, viewportFullName, output))]]></script>
+  </tool>
+
+  <tool name="com.sashaouellet::SavePrefsToStuhome" label="Save Prefs to Stuhome" icon="hicon:/SVGIcons.index?VOP_subnetconnector.svg">
+    <helpText><![CDATA[= Save Prefs to Stuhome =
+
+"""Saves desktops and other preferences on the network"""
+
+This tool is meant to work alongside a bash_custom that copies your houdini16.0 folder from ~/mount/stuhome to ~/.
+
+Example bash_custom:
+
+rm -rf ~/houdini16.0
+
+cp -r ~/mount/stuhome/houdini16.0 ~/houdini16.0
+
+WARNING:
+    Do not use this tool on Windows as it will crash Houdini. Your Houdini preferences are already synced on the network anyway on Windows.
+
+Created by [Sasha Ouellet|http://www.sashaouellet.com]]]></helpText>
+    <script scriptType="python"><![CDATA[import os
+
+os.system('rm -rf ~/mount/stuhome/houdini16.0')
+os.system('cp -r ~/houdini16.0 ~/mount/stuhome/houdini16.0')
+
+hou.ui.displayMessage('Successfully copied preferences')]]></script>
+  </tool>
+
+  <tool name="com.sashaouellet::CleanSubnet" label="Clean Subnet" icon="hicon:/SVGIcons.index?BUTTONS_clear.svg">
+    <script scriptType="python"><![CDATA[def main():
+    selected = hou.selectedNodes()
+    
+    if selected and len(selected) == 1:
+        subnet = selected[0] # Selected subnet
+        topLevel = [c for c in subnet.children() if not c.inputConnections()] # All nodes inside the subnet with no incoming connections are assumed to be top level parents
+        potentialDelete = ['System', 'Unlabeled_Markers'] # Node names for nodes that we probably will always delete
+        bestGuesses = [topLevel.index(n) for n in topLevel if n.name() in potentialDelete] # We guess from the children nodes based on potentialDelete
+        
+        # bestGuesses is passed as the default choices, which will highlight them automatically and queue for deletion
+        # We clear this selection on cancel, so that they don't accidentally delete anything
+        toDelete = [topLevel[i] for i in hou.ui.selectFromList([n.name() for n in topLevel], default_choices=bestGuesses, message='Select top level parents that you want to DELETE', title='Delete Trees')]
+        
+        if toDelete and hou.ui.displayConfirmation('You are about to delete: {} and all of the connections to these nodes. Are you sure you want to proceed?'.format(', '.join([n.name() for n in toDelete]))):
+            for node in toDelete:
+                deleteTree(node)
+        
+        subnet.layoutChildren()
+    else:
+        hou.ui.displayMessage('Please select a single node for cleanup', severity=hou.severityType.Error)
+        return
+
+        
+def deleteTree(node):
+    if not node.isLockedHDA() and not node.isInsideLockedHDA():
+        for connected in [n.outputNode() for n in node.outputConnections()]:
+            deleteTree(connected) # Recursively delete output connections
+        node.destroy()
+main()]]></script>
+  </tool>
+
+  <tool name="com.sashaouellet::CalculateMocapLocomotion" label="Calculate Mocap Locomotion" icon="hicon:/SVGIcons.index?OBJ_simplemale.svg">
+    <script scriptType="python"><![CDATA[import sys, math
+from numpy.linalg import norm
+from numpy import array
+
+FRAME_TIMEOUT = 5
+
+def main():
+    selection = hou.selectedNodes()
+    
+    if selection:
+        subnet = selection[0]
+        bones = [n for n in subnet.children() if n.type().name() == 'bone']
+        boneNameList = [b.name() for b in bones]
+        bestGuess = [n.name() for n in subnet.glob('*LeftFoot* *RightFoot*') if n.type().name() == 'bone']
+        selectedBones = [bones[i] for i in hou.ui.selectFromList(boneNameList, default_choices=[boneNameList.index(g) for g in bestGuess], message='Select 2 bones that serve as reference for the stride length', title='Bone Selection')]
+        
+        if len(selectedBones) != 2:
+            hou.ui.displayMessage('Please select exactly 2 bones to analyze stride length ({} selected)'.format(len(selectedBones)), severity=hou.severityType.Error)
+            return
+        
+        nulls = [n.inputConnections()[0].inputNode() for n in selectedBones]
+        
+        frameStart = int(hou.playbar.playbackRange()[0])
+        frameEnd = int(hou.playbar.playbackRange()[1])
+        frange = hou.ui.readMultiInput('Select the frame range to analyze the clip from', ['Start', 'End'], initial_contents=[str(frameStart), str(frameEnd)])
+        
+        # Range requires validation
+        
+        frameStart = int(frange[1][0])
+        frameEnd = int(frange[1][1])
+        
+        minDist = sys.float_info.max
+        minFrame = -1
+        minLock = False
+        minNoChange = 0
+        
+        maxDist = sys.float_info.min
+        maxFrame = -1
+        maxLock = False
+        maxNoChange = 0
+        
+        for f in range(frameStart, frameEnd + 1):
+            hou.setFrame(f)
+            
+            posArr = []
+            
+            for null in nulls:
+                transformMatrix = null.worldTransform()
+                potentialPointNodes = [n for n in null.children() if n.type().name() == 'add']
+                
+                if not potentialPointNodes:
+                    hou.ui.displayMessage('Node {} didn\'t have expected Add node inside. Aborting.'.format(null.path()), severity=hou.severityType.Error)
+                    return
+                
+                point = potentialPointNodes[0]
+                pointPos = hou.Vector3([0.0, 0.0, 0.0])
+
+                worldLocation = pointPos * transformMatrix
+                
+                posArr.append(worldLocation)
+            
+            dist = norm(array(posArr[0]) - array(posArr[1]))
+            
+            if dist > maxDist and not maxLock:
+                maxDist = dist
+                maxFrame = f
+            else:
+                maxNoChange += 1
+                
+                if maxNoChange >= FRAME_TIMEOUT:
+                    maxLock = True
+            
+            if dist < minDist and not minLock:
+                minDist = dist
+                minFrame = f
+            else:
+                minNoChange += 1
+                
+                if minNoChange >= FRAME_TIMEOUT:
+                    minLock = True
+        
+        strideLength = abs(maxDist - minDist)
+        strideTime = abs(maxFrame - minFrame)
+        
+        # DEBUG
+        print '-'*30
+        print 'Stride length / Stride time (frames):', strideLength, strideTime
+        print 'Min distance @ frame:', minDist, minFrame
+        print 'Max distance @ frame:', maxDist, maxFrame
+        print '-'*30
+        
+        axes = ['X', 'Y', 'Z']
+        axis = axes[hou.ui.selectFromList(axes, default_choices=[0], message='Select axis to apply transformation along', title='Axis Selection')[0]].lower()
+        hips = [n.inputConnections()[0].inputNode() for n in subnet.glob('*Hips*') if n.type().name() == 'bone'][0]
+        
+        transform = hips.createInputNode(0, 'null', node_name='TRANSFORM')
+        
+        transform.parm('t{}'.format(axis)).setExpression('$F * {}'.format(strideLength / strideTime))
+        
+        subnet.layoutChildren()
+    else:
+        hou.ui.displayMessage('Please select a subnet where your FBX has been imported', severity=hou.severityType.Error)
+        return
+    
+    
+main()]]></script>
+  </tool>
+
+  <shelfSetEdit name="shelf_set_td" fileLocation="C:/PROGRA~1/SIDEEF~1/HOUDIN~1.671/houdini/toolbar\ShelfDefinitions.shelf">
+    <addMemberToolshelf name="com.sashaouellet::sdm_tools" inPosition="16"/>
+  </shelfSetEdit>
+</shelfDocument>
