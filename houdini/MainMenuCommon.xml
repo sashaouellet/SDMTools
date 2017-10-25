@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mainMenu>
+	<menuBar>
+		<subMenu id="render_menu">
+			<scriptItem id="sdm_upload">
+				<label>Upload to SDM Farm</label>
+				<insertAfter>render_pre_flight</insertAfter>
+				<scriptCode>
+<![CDATA[
+import os
+def main():
+	if hou.hipFile.path().startswith(os.path.join(os.path.expanduser('~'), 'untitled')):
+		hou.ui.displayMessage('Please save your file first', title='Default file location', severity=hou.severityType.Error)
+		return
+	sdmUploadNodes = [n for n in hou.node('/out').children() if n.type().name() == 'sdm_upload']
+	node = ''
+	if sdmUploadNodes:
+		node = sdmUploadNodes[0]
+	else:
+		node = hou.node('/out').createNode('sdm_upload')
+		node.moveToGoodPosition()
+	
+	net = hou.ui.paneTabOfType(hou.paneTabType.NetworkEditor)
+	
+	if net:
+		net.setCurrentNode(node)
+main()
+]]>
+				</scriptCode>
+		        </scriptItem>
+		</subMenu>
+	</menuBar>
+</mainMenu>
+
