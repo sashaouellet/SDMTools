@@ -13,6 +13,13 @@
   </toolshelf>
 
   <tool name="com.sashaouellet::MultiFlipbook" label="Multi Flipbook" icon="hicon:/SVGIcons.index?BUTTONS_capture.svg">
+    <helpText><![CDATA[= Multi Flipbook =
+
+"""Allows for flipbooking from multiple cameras simultaneously"""
+
+Select all the cameras you want to flipbook from as well as the frame range and frame increment for the flipbook. Then select the file location to save to, making sure to include the $F syntax (or $F3, etc). The viewport will then be exported to these files with the camera name prefixed to the chosen file name.
+
+Created by [Sasha Ouellet|http://www.sashaouellet.com]]]></helpText>
     <script scriptType="python"><![CDATA[import os
 
 cameras = [c for c in hou.node('/').allSubChildren() if c.type().name() == 'cam']
@@ -85,6 +92,13 @@ hou.ui.displayMessage('Successfully copied preferences')]]></script>
   </tool>
 
   <tool name="com.sashaouellet::CleanSubnet" label="Clean Subnet" icon="hicon:/SVGIcons.index?BUTTONS_clear.svg">
+    <helpText><![CDATA[= Clean Subnet =
+
+"""Removes the entire tree structure from selected nodes of a subnet"""
+
+This is a convienence tool for cleaning up large FBX's. Note that the selection is the node trees you want to delete.
+
+Created by [Sasha Ouellet|http://www.sashaouellet.com]]]></helpText>
     <script scriptType="python"><![CDATA[def main():
     selected = hou.selectedNodes()
     
@@ -117,6 +131,13 @@ main()]]></script>
   </tool>
 
   <tool name="com.sashaouellet::CalculateMocapLocomotion" label="Calculate Mocap Locomotion" icon="hicon:/SVGIcons.index?OBJ_simplemale.svg">
+    <helpText><![CDATA[= Calculate Mocap Locomotion =
+
+"""Applies physical transforms to mocap rig based on stride length/speed."""
+
+This tool will automatically calculate a stride length from the frame range that is selected and the 2 bones selected. It is recommended you choose the feet bones, and the tool will automatically pick those for you to begin with. The transform is applied to the root of the mocap rig.
+
+Created by [Sasha Ouellet|http://www.sashaouellet.com]]]></helpText>
     <script scriptType="python"><![CDATA[import sys, math
 from numpy.linalg import norm
 from numpy import array
