@@ -61,6 +61,7 @@ for camera in selected:
 
 for f in range(frameStart, frameEnd + 1, frameInc):
     for camera, output in cameraOutputs:
+        hou.setFrame(f)
         viewport.setCamera(camera)
         
         hou.hscript("viewwrite -f {} {} {} '{}'".format(f, f, viewportFullName, output))]]></script>
