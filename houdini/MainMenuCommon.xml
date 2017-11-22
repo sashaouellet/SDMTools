@@ -1,6 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mainMenu>
 	<menuBar>
+		<subMenu id="file_menu">
+			<scriptItem id="saveIncrement">
+				<label>Save As Increment</label>
+				<insertAfter>h.save_as</insertAfter>
+				<scriptCode>
+<![CDATA[
+import os, re
+def main():
+	if hou.hipFile.path().startswith(os.path.join(os.path.expanduser('~'), 'untitled')):
+		return
+	regx = re.compile(r'[\w\.-]+[\.|_]((v?)(0+)(\d+))')
+	dir, file = os.path.split(hou.hipFile.name())
+	name, ext = os.path.splitext(file)
+	matches = regx.search(name)
+
+	if matches:
+		wholeVersion = matches.group(1)
+		vString = matches.group(2)
+		zeroes = matches.group(3)
+		num = matches.group(4)
+
+		nextVersionNum = int(num) + 1
+		nextVersionNum = str(nextVersionNum).zfill(len(zeroes) + len(num))
+
+		name = name.replace(wholeVersion, vString + nextVersionNum)
+	else: # No version number added yet
+		name += '.0001'
+
+	hou.hipFile.save(file_name=os.path.join(dir, '{}{}'.format(name, ext)))
+main()
+]]>
+			</scriptCode>
+			</scriptItem>
+		</subMenu>
 		<subMenu id="render_menu">
 			<scriptItem id="sdm_upload">
 				<label>Upload to SDM Farm</label>
@@ -19,9 +53,9 @@ def main():
 	else:
 		node = hou.node('/out').createNode('sdm_upload')
 		node.moveToGoodPosition()
-	
+
 	net = hou.ui.paneTabOfType(hou.paneTabType.NetworkEditor)
-	
+
 	if net:
 		net.setCurrentNode(node)
 main()

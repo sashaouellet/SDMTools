@@ -10,6 +10,7 @@
     <memberTool name="com.sashaouellet::MultiFlipbook"/>
     <memberTool name="com.sashaouellet::CleanSubnet"/>
     <memberTool name="com.sashaouellet::CalculateMocapLocomotion"/>
+    <memberTool name="com.sashaouellet::convertrat::1.0"/>
   </toolshelf>
 
   <tool name="com.sashaouellet::MultiFlipbook" label="Multi Flipbook" icon="hicon:/SVGIcons.index?BUTTONS_capture.svg">
@@ -86,10 +87,16 @@ WARNING:
 Created by [Sasha Ouellet|http://www.sashaouellet.com]]]></helpText>
     <script scriptType="python"><![CDATA[import os
 
-os.system('rm -rf ~/mount/stuhome/houdini16.0')
-os.system('cp -r ~/houdini16.0 ~/mount/stuhome/houdini16.0')
+def main():
+    if not os.path.exists('~/mount/stuhome/houdini16.0'):
+        return
+    
+    os.system('rm -rf ~/mount/stuhome/houdini16.0')
+    os.system('cp -r ~/houdini16.0 ~/mount/stuhome/houdini16.0')
+    
+    hou.ui.displayMessage('Successfully copied preferences')
 
-hou.ui.displayMessage('Successfully copied preferences')]]></script>
+main()]]></script>
   </tool>
 
   <tool name="com.sashaouellet::CleanSubnet" label="Clean Subnet" icon="hicon:/SVGIcons.index?BUTTONS_clear.svg">
@@ -180,10 +187,27 @@ def main():
         maxLock = False
         maxNoChange = 0
         
+        # Choose axis to apply transformation
+#        axes = ['X', 'Y', 'Z']
+#        axis = axes[hou.ui.selectFromList(axes, default_choices=[0], message='Select axis to apply transformation along', title='Axis Selection')[0]].lower()
+#        
+#        hips = [n.inputConnections()[0].inputNode() for n in subnet.glob('*Hips*') if n.type().name() == 'bone'][0]
+#        transform = hips.createInputNode(0, 'null', node_name='TRANSFORM')        
+#        transformParm = transform.parm('t{}'.format(axis))
+#        
+#        subnet.layoutChildren()
+        
+        pastValue = 0.0
+        pastDist = 0.0
+        distThresh = 0.6
+        
         for f in range(frameStart, frameEnd + 1):
             hou.setFrame(f)
             
             posArr = []
+            keyframe = hou.Keyframe()
+            
+            keyframe.setFrame(f)
             
             for null in nulls:
                 transformMatrix = null.worldTransform()
@@ -201,7 +225,36 @@ def main():
                 posArr.append(worldLocation)
             
             dist = norm(array(posArr[0]) - array(posArr[1]))
+            #dist = abs(posArr[0][2] - posArr[1][2])
+            #dist = pastDist - posArr[1][2]
+            deltaDist = abs(dist - pastDist)
             
+            if deltaDist <= distThresh: # Lifoff from back foot, pull forward
+                print 'Set pull forward key'
+                keyframe = hou.Keyframe()
+            
+                keyframe.setFrame(f - 1)
+                keyframe.setValue(pastValue)
+                
+                #transformParm.setKeyframe(keyframe)
+                
+                pastDist = dist
+            
+            if dist <= 2: # end of stride
+                print 'set end key'
+                keyframe = hou.Keyframe()
+            
+                keyframe.setFrame(f)
+                keyframe.setValue(pastValue + abs(dist - pastDist))
+                
+                #transformParm.setKeyframe(keyframe)
+                
+                pastValue = pastValue + abs(dist - pastDist)
+            
+            print '{}\t-\t{}\t-\t{}'.format(f, dist, deltaDist)
+            
+            pastDist = dist
+                        
             if dist > maxDist and not maxLock:
                 maxDist = dist
                 maxFrame = f
@@ -221,7 +274,7 @@ def main():
                     minLock = True
         
         strideLength = abs(maxDist - minDist)
-        strideTime = abs(maxFrame - minFrame)
+        strideTime = abs(maxFrame - minFrame) + 1
         
         # DEBUG
         print '-'*30
@@ -243,6 +296,140 @@ def main():
         hou.ui.displayMessage('Please select a subnet where your FBX has been imported', severity=hou.severityType.Error)
         return
     
+    
+main()]]></script>
+  </tool>
+
+  <tool name="com.sashaouellet::convertrat::1.0" label="Convert to RAT" icon="hicon:/SVGIcons.index?SOP_filecache.svg">
+    <helpText><![CDATA[= Convert to RAT =
+
+"""Converts all referenced image files to RAT format, with the option to scale down and/or limit to a specific resolution."""
+
+The default settings for this tool do not perform any scaling on the found images. First, Global Scale is calculated on all the images. Any images that still exceed the resolution set in "Max Resolution" will be further scaled down. By default, "None" means there is no max resolution. Choose "Custom" if you would like to specify a resolution other than the options provided.
+
+Created by [Sasha Ouellet|http://www.sashaouellet.com]]]></helpText>
+    <script scriptType="python"><![CDATA[import os, sys
+import imghdr
+import subprocess
+from PIL import Image
+
+from PySide2.QtCore import *
+from PySide2.QtGui import *
+from PySide2.QtWidgets import *
+from PySide2.QtUiTools import QUiLoader
+
+ALTERNATE_IMAGE_EXTS = ['.hdr']
+
+class OutputSettingsDialog(QDialog):
+    def __init__(self):
+        QDialog.__init__(self)
+        
+        toolbarDir = os.path.dirname(hou.shelves.runningTool().filePath())
+        uiPath = os.path.join(toolbarDir, 'ui', 'convertRat.ui')
+        
+        file = QFile(uiPath)
+        file.open(QFile.ReadOnly)
+        
+        loader = QUiLoader()
+        self.ui = loader.load(file)
+        
+        self.ui.setStyleSheet(hou.qt.styleSheet())
+        self.ui.LNE_maxRes.setValidator(QDoubleValidator())
+        self.ui.LNE_maxRes.setEnabled(False)
+        self.ui.CMB_maxRes.currentIndexChanged.connect(self.handleMaxResOption)
+        
+        self.ret = self.ui.exec_()
+        
+        hou.session.dummy = self.ui # Keeps the dialog open
+    
+    def handleMaxResOption(self, index):
+        self.ui.LNE_maxRes.setEnabled(index == 6)
+        
+def main():
+    hipDir = hou.getenv('HIP')
+    
+    dialog = OutputSettingsDialog()
+    
+    scaleOptions = [100.0, 75.0, 66.66, 50.0, 33.33, 25.0]
+    maxResOptions = [-1, 4096.0, 2048.0, 1024.0, 512.0, 256.0, -2]
+    
+    if dialog.ret == QDialog.Rejected:
+        return
+        
+    maxDim = maxResOptions[dialog.ui.CMB_maxRes.currentIndex()]
+    scale = scaleOptions[dialog.ui.CMB_globalScale.currentIndex()]
+    
+    if maxDim == -2: # Custom dimension chosen, grab from line edit
+        try:
+            maxDim = float(dialog.ui.LNE_maxRes.text())
+        except ValueError:
+            hou.ui.displayMessage('Invalid input specified for max resolution (not a floating point number). Please try again.', title='Input Error', severity=hou.severityType.Error)
+            return
+        
+    refs = hou.fileReferences()
+    converted = 0
+    
+    with hou.InterruptableOperation('Converting images to RAT...') as operation:
+        for parm, f in refs:            
+            f = hou.expandString(f)
+        
+            if os.path.isfile(f) and os.path.exists(f) and isDescendant(f, hipDir) and isImage(f):
+                newPath = convertImage(f, maxDim, scale)
+                
+                parm.set(getRelativeToHip(newPath))
+                
+                converted += 1
+                
+    hou.ui.displayMessage('Done converting {} image(s)'.format(converted), title='Conversion Complete')
+                
+def isImage(file):
+    if imghdr.what(file) is not None:
+        return True
+    
+    path, ext = os.path.splitext(file)
+    
+    if ext in ALTERNATE_IMAGE_EXTS:
+        return True
+    
+    return False
+
+def convertImage(file, maxDim, scale):
+    args = [os.path.join(hou.getenv('HFS'), 'bin', 'icp')]
+    scale /= 100.0
+    resolution = hou.imageResolution(file)
+    width = float(resolution[0]) * scale
+    height = float(resolution[1]) * scale
+    
+    resizeFactor = 1.0
+    
+    if maxDim != -1: # Only calculate if user hasn't selected 'None'
+        resizeFactor = float(maxDim) / width
+        resizeFactor = min(resizeFactor, float(maxDim) / height) # if a smaller ratio, use that
+    
+    if resizeFactor < 1.0: # only want to scale down
+        scale *= resizeFactor
+         
+    args.append('-u') # uncompressed, if supported
+        
+    args.append('-s')
+    args.append(str(float(scale * 100)))
+
+    newPath = '{}.rat'.format(os.path.splitext(file)[0])
+
+    args.append(file)
+    args.append(newPath)
+
+    subprocess.call(args)
+    
+    return newPath
+    
+def isDescendant(file, root):
+    return file.startswith(root)
+    
+def getRelativeToHip(file):
+    hip = hou.getenv('HIP')
+    
+    return os.path.normpath(file.replace(hip, os.path.join('$HIP', '')))
     
 main()]]></script>
   </tool>

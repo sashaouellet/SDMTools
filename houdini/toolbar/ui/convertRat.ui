@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>OutputSettings</class>
+ <widget class="QDialog" name="OutputSettings">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>322</width>
+    <height>141</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>RAT Output Settings</string>
+  </property>
+  <layout class="QFormLayout" name="formLayout">
+   <property name="fieldGrowthPolicy">
+    <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+   </property>
+   <item row="3" column="1">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="0">
+    <widget class="QLabel" name="LBL_globalScale">
+     <property name="toolTip">
+      <string>This is the factor that each outputted image will be scaled to</string>
+     </property>
+     <property name="text">
+      <string>Global Scale</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="LBL_maxRes">
+     <property name="toolTip">
+      <string>Any images that exceed this resolution (in width or height, after &quot;Global Scale&quot; has been applied) will be further scaled down to meet this max resolution</string>
+     </property>
+     <property name="text">
+      <string>Max Output Resolution</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QComboBox" name="CMB_globalScale">
+     <item>
+      <property name="text">
+       <string>100%</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>75%</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>66%</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>50%</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>33%</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>25%</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="QLineEdit" name="LNE_maxRes">
+     <property name="inputMask">
+      <string/>
+     </property>
+     <property name="readOnly">
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QComboBox" name="CMB_maxRes">
+     <item>
+      <property name="text">
+       <string>None</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>4K (4096)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>2K (2048)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>1K (1024)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Half (512)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Quarter (256)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Custom</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>OutputSettings</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>248</x>
+     <y>254</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>157</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>OutputSettings</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>316</x>
+     <y>260</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>286</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>
