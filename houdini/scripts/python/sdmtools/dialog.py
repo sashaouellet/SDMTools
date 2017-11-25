@@ -87,6 +87,8 @@ def checkForUpdates():
 
 			currVer = settingsJson.get('version', 'v1.0.0')
 			autoCheckUpdates = settingsJson.get('autoCheckUpdates', False)
+	else: # make file with version set to 1.0.0
+		pass
 
 	releasesUrl = 'https://api.github.com/repos/sashaouellet/SDMTools/releases'
 	allVersions = []
