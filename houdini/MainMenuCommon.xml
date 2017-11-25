@@ -63,6 +63,31 @@ main()
 				</scriptCode>
 		        </scriptItem>
 		</subMenu>
+		<subMenu id="sdmTools_menu">
+			<label>SDMTools</label>
+			<insertBefore>help_menu</insertBefore>
+			<scriptItem id="checkUpdates">
+				<label>Check For Updates...</label>
+				<scriptCode>
+<![CDATA[
+from sdmtools.dialog import checkForUpdates
+
+checkForUpdates()
+]]>
+				</scriptCode>
+			</scriptItem>
+			<separatorItem id="sdmTools_menu_sep_1"/>
+			<scriptItem id="about">
+				<label>About SDM Tools</label>
+				<scriptCode>
+<![CDATA[
+from sdmtools.dialog import about
+
+about()
+]]>
+				</scriptCode>
+			</scriptItem>
+		</subMenu>
 	</menuBar>
 </mainMenu>
 
