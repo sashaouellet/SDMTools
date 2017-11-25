@@ -6,69 +6,14 @@
  a single file. -->
 
   <toolshelf name="com.sashaouellet::sdm_tools" label="SDM Tools">
-    <memberTool name="com.sashaouellet::SavePrefsToStuhome"/>
-    <memberTool name="com.sashaouellet::MultiFlipbook"/>
-    <memberTool name="com.sashaouellet::CleanSubnet"/>
-    <memberTool name="com.sashaouellet::CalculateMocapLocomotion"/>
-    <memberTool name="com.sashaouellet::convertrat::1.0"/>
+    <memberTool name="com.sashaouellet::savprefstostuhome::1.0.0"/>
+    <memberTool name="com.sashaouellet::multiflipbook::1.1.0"/>
+    <memberTool name="com.sashaouellet::cleansubnet::1.0.0"/>
+    <memberTool name="com.sashaouellet::calculatemocaplocomotion::1.0.0-alpha"/>
+    <memberTool name="com.sashaouellet::convertrat::1.0.0"/>
   </toolshelf>
 
-  <tool name="com.sashaouellet::MultiFlipbook" label="Multi Flipbook" icon="hicon:/SVGIcons.index?BUTTONS_capture.svg">
-    <helpText><![CDATA[= Multi Flipbook =
-
-"""Allows for flipbooking from multiple cameras simultaneously"""
-
-Select all the cameras you want to flipbook from as well as the frame range and frame increment for the flipbook. Then select the file location to save to, making sure to include the $F syntax (or $F3, etc). The viewport will then be exported to these files with the camera name prefixed to the chosen file name.
-
-Created by [Sasha Ouellet|http://www.sashaouellet.com]]]></helpText>
-    <script scriptType="python"><![CDATA[import os
-
-cameras = [c for c in hou.node('/').allSubChildren() if c.type().name() == 'cam']
-selected = [cameras[i] for i in hou.ui.selectFromList([c.name() for c in cameras], message='Select the camera(s) to flipbook from', title='Camera Selection', column_header='Cameras')]
-outputBase = hou.ui.selectFile(title='Save Sequence(s) as...', collapse_sequences=True, file_type=hou.fileType.Image, chooser_mode=hou.fileChooserMode.Write)
-
-if not outputBase or '$F' not in outputBase:
-    hou.ui.displayMessage('Invalid output path specified (Make sure to use $F, $F4, etc. notation)', severity=hou.severityType.Error)
-    raise SystemExit
-
-splitBase = os.path.split(outputBase)
-sceneViewer = hou.ui.curDesktop().paneTabOfType(hou.paneTabType.SceneViewer)
-
-frameStart = int(sceneViewer.flipbookSettings().frameRange()[0])
-frameEnd = int(sceneViewer.flipbookSettings().frameRange()[1])
-frameInc = sceneViewer.flipbookSettings().frameIncrement()
-
-frameInput = hou.ui.readMultiInput('Select frame range for flipbook(s)', ['Start', 'End', 'Inc'], initial_contents=[str(frameStart), str(frameEnd), str(frameInc)])
-
-frameStart = int(frameInput[1][0])
-frameEnd = int(frameInput[1][1])
-frameInc = int(frameInput[1][2])
-
-if not sceneViewer:
-    hou.ui.displayMessage('Could not find Scene Viewer pane tab, please create it and try again', severity=hou.severityType.Error)
-    raise SystemExit
-
-viewport = [vp for vp in sceneViewer.viewports() if vp.type() == hou.geometryViewportType.Perspective][0]
-
-if not viewport:
-    hou.ui.displayMessage('Could not find the "Persp" viewport', severity=hou.severityType.Error)
-    raise SystemExit
-
-viewportFullName = '{}.{}.world.{}'.format(hou.ui.curDesktop().name(), sceneViewer.name(), viewport.name())
-cameraOutputs = []
-
-for camera in selected:
-    cameraOutputs.append((camera, os.path.join(splitBase[0], '{}_{}'.format(camera.name(), splitBase[1]))))
-
-for f in range(frameStart, frameEnd + 1, frameInc):
-    for camera, output in cameraOutputs:
-        hou.setFrame(f)
-        viewport.setCamera(camera)
-
-        hou.hscript("viewwrite -f {} {} {} '{}'".format(f, f, viewportFullName, output))]]></script>
-  </tool>
-
-  <tool name="com.sashaouellet::SavePrefsToStuhome" label="Save Prefs to Stuhome" icon="hicon:/SVGIcons.index?VOP_subnetconnector.svg">
+  <tool name="com.sashaouellet::savprefstostuhome::1.0.0" label="Save Prefs to Stuhome" icon="hicon:/SVGIcons.index?VOP_subnetconnector.svg">
     <helpText><![CDATA[= Save Prefs to Stuhome =
 
 """Saves desktops and other preferences on the network"""
@@ -99,7 +44,77 @@ def main():
 main()]]></script>
   </tool>
 
-  <tool name="com.sashaouellet::CleanSubnet" label="Clean Subnet" icon="hicon:/SVGIcons.index?BUTTONS_clear.svg">
+  <tool name="com.sashaouellet::multiflipbook::1.1.0" label="Multi Flipbook" icon="hicon:/SVGIcons.index?BUTTONS_capture.svg">
+    <helpText><![CDATA[= Multi Flipbook =
+
+"""Allows for flipbooking from multiple cameras simultaneously"""
+
+Select all the cameras you want to flipbook from as well as the frame range and frame increment for the flipbook. Then select the file location to save to, making sure to include the $F syntax (or $F3, etc). The viewport will then be exported to these files with the camera name prefixed to the chosen file name.
+
+Created by [Sasha Ouellet|http://www.sashaouellet.com]]]></helpText>
+    <script scriptType="python"><![CDATA[import os
+
+def main():
+    cameras = [c for c in hou.node('/').allSubChildren() if c.type().name() == 'cam']
+
+    if not cameras:
+        hou.ui.displayMessage('No cameras to flipbook from', title='No Cameras', severity=hou.severityType.Error)
+        return
+
+    selected = [cameras[i] for i in hou.ui.selectFromList([c.name() for c in cameras], message='Select the camera(s) to flipbook from', title='Camera Selection', column_header='Cameras')]
+
+    if not selected:
+        return
+
+    outputBase = hou.ui.selectFile(title='Save Sequence(s) as...', collapse_sequences=True, file_type=hou.fileType.Image, chooser_mode=hou.fileChooserMode.Write)
+
+    if not outputBase:
+        return
+
+    if '$F' not in outputBase:
+        hou.ui.displayMessage('Invalid output path specified (Make sure to use $F, $F4, etc. notation)', severity=hou.severityType.Error)
+        return
+
+    splitBase = os.path.split(outputBase)
+    sceneViewer = hou.ui.curDesktop().paneTabOfType(hou.paneTabType.SceneViewer)
+
+    frameStart = int(sceneViewer.flipbookSettings().frameRange()[0])
+    frameEnd = int(sceneViewer.flipbookSettings().frameRange()[1])
+    frameInc = sceneViewer.flipbookSettings().frameIncrement()
+
+    frameInput = hou.ui.readMultiInput('Select frame range for flipbook(s)', ['Start', 'End', 'Inc'], initial_contents=[str(frameStart), str(frameEnd), str(frameInc)])
+
+    frameStart = int(frameInput[1][0])
+    frameEnd = int(frameInput[1][1])
+    frameInc = int(frameInput[1][2])
+
+    if not sceneViewer:
+        hou.ui.displayMessage('Could not find Scene Viewer pane tab, please create it and try again', severity=hou.severityType.Error)
+        raise SystemExit
+
+    viewport = [vp for vp in sceneViewer.viewports() if vp.type() == hou.geometryViewportType.Perspective][0]
+
+    if not viewport:
+        hou.ui.displayMessage('Could not find the "Persp" viewport', severity=hou.severityType.Error)
+        raise SystemExit
+
+    viewportFullName = '{}.{}.world.{}'.format(hou.ui.curDesktop().name(), sceneViewer.name(), viewport.name())
+    cameraOutputs = []
+
+    for camera in selected:
+        cameraOutputs.append((camera, os.path.join(splitBase[0], '{}_{}'.format(camera.name(), splitBase[1]))))
+
+    for f in range(frameStart, frameEnd + 1, frameInc):
+        for camera, output in cameraOutputs:
+            hou.setFrame(f)
+            viewport.setCamera(camera)
+
+            hou.hscript("viewwrite -f {} {} {} '{}'".format(f, f, viewportFullName, output))
+
+main()]]></script>
+  </tool>
+
+  <tool name="com.sashaouellet::cleansubnet::1.0.0" label="Clean Subnet" icon="hicon:/SVGIcons.index?BUTTONS_clear.svg">
     <helpText><![CDATA[= Clean Subnet =
 
 """Removes the entire tree structure from selected nodes of a subnet"""
@@ -138,7 +153,7 @@ def deleteTree(node):
 main()]]></script>
   </tool>
 
-  <tool name="com.sashaouellet::CalculateMocapLocomotion" label="Calculate Mocap Locomotion" icon="hicon:/SVGIcons.index?OBJ_simplemale.svg">
+  <tool name="com.sashaouellet::calculatemocaplocomotion::1.0.0-alpha" label="Calculate Mocap Locomotion" icon="hicon:/SVGIcons.index?OBJ_simplemale.svg">
     <helpText><![CDATA[= Calculate Mocap Locomotion =
 
 """Applies physical transforms to mocap rig based on stride length/speed."""
@@ -300,7 +315,7 @@ def main():
 main()]]></script>
   </tool>
 
-  <tool name="com.sashaouellet::convertrat::1.0" label="Convert to RAT" icon="SHELF_ConvertToRAT">
+  <tool name="com.sashaouellet::convertrat::1.0.0" label="Convert to RAT" icon="SHELF_ConvertToRAT">
     <helpText><![CDATA[= Convert to RAT =
 
 """Converts all referenced image files to RAT format, with the option to scale down and/or limit to a specific resolution."""
