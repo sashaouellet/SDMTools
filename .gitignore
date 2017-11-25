@@ -1,2 +1,3 @@
 houdini/otls/backup/*
 .DS_Store
+*.pyc
