@@ -32,14 +32,15 @@ class CheckForUpdatesDialog(QDialog):
 		self.ui.TBL_versions.setSelectionMode(QAbstractItemView.SingleSelection);
 
 		self.ui.BTN_install.setEnabled(False)
+
+		# Signal connection
 		self.ui.BTN_cancel.clicked.connect(self.ui.reject)
 		self.ui.BTN_install.clicked.connect(self.ui.accept)
+		self.ui.TBL_versions.itemSelectionChanged.connect(self.handleSelectionChanged)
 
 		self.ui.CHK_autoCheckUpdates.setChecked(autoCheckUpdates)
 
 		self.populateRows(newVersions)
-
-		self.ui.TBL_versions.itemSelectionChanged.connect(self.handleSelectionChanged)
 
 		self.ret = self.ui.exec_()
 
@@ -57,9 +58,9 @@ class CheckForUpdatesDialog(QDialog):
 		for r in range(numRows):
 			for c in range(len(cols)):
 				key = cols[c]
-				data = newVersions[r][cols[c]]
+				data = newVersions[r].get(key, None)
 
-				if key == 'created_at':
+				if key == 'created_at' and data:
 					date = datetime.strptime(data, '%Y-%m-%dT%H:%M:%SZ')
 					data = date.strftime('%m/%d/%y (%I:%M:%S %p EST)')
 
@@ -80,15 +81,19 @@ def checkForUpdates():
 	settingsJsonPath = os.path.join(sdmtools.folder, 'settings.json')
 	currVer = 'v1.0.0'
 	autoCheckUpdates = False
+	settingsJson = {}
+	settingsFile = open(settingsJsonPath, 'r+')
 
-	if os.path.exists(settingsJsonPath):
-		with open(settingsJsonPath) as file:
-			settingsJson = json.loads(file.read())
+	if not os.path.exists(settingsJsonPath):
+		settingsFile = open(settingsJsonPath, 'w+')
 
-			currVer = settingsJson.get('version', 'v1.0.0')
-			autoCheckUpdates = settingsJson.get('autoCheckUpdates', False)
-	else: # make file with version set to 1.0.0
+	try:
+		settingsJson = json.loads(settingsFile.read())
+	except ValueError:
 		pass
+
+	currVer = settingsJson.get('version', 'v1.0.0')
+	autoCheckUpdates = settingsJson.get('autoCheckUpdates', False)
 
 	releasesUrl = 'https://api.github.com/repos/sashaouellet/SDMTools/releases'
 	allVersions = []
@@ -109,69 +114,78 @@ def checkForUpdates():
 		dialog = CheckForUpdatesDialog(newVersions, autoCheckUpdates)
 
 		if dialog.ret == QDialog.Rejected:
+			settingsJson['autoCheckUpdates'] = dialog.ui.CHK_autoCheckUpdates.isChecked()
+
+			settingsFile.seek(0)
+			json.dump(settingsJson, settingsFile, sort_keys=True, indent=4, separators=(',', ': '))
+			settingsFile.truncate()
+
 			return
 
 		autoCheckUpdates = dialog.ui.CHK_autoCheckUpdates.isChecked()
 
 		ret = hou.ui.displayMessage('The selected version will be downloaded and installed. Would you like to proceed?', title='SDMTools Updates', buttons=('Yes', 'No'), close_choice=1)
-		if ret != 1: # Confirmed installation
-			if dialog.ui.TBL_versions.selectedItems(): # Double check to make sure we have something selected
-				selectedTag = dialog.ui.TBL_versions.selectedItems()[0].text()
-				version = None
 
-				for v in allVersions:
-					if v['tag_name'] == selectedTag:
-						version = v
-						break
+		if ret == 1: # Denied installation
+			return
 
-				if version:
-					targetDir =  os.path.join(os.path.split(os.path.dirname(sdmtools.folder))[0], 'temp_{}'.format(uuid.uuid4())) # temp SDMTools base directory - to rename after deleting old one
-					oldSettings = '{}'
+		if dialog.ui.TBL_versions.selectedItems(): # Double check to make sure we have something selected
+			selectedTag = dialog.ui.TBL_versions.selectedItems()[0].text()
+			version = None
 
-					for dirpath, dirs, files in os.walk(os.path.dirname(sdmtools.folder)):
-						for f in files:
-							if f == 'settings.json':
-								oldSettings = json.load(open(os.path.join(dirpath, f)))
+			for v in allVersions:
+				if v['tag_name'] == selectedTag:
+					version = v
+					break
 
-					try:
-						response = urllib2.urlopen(version['zipball_url'])
-						s = StringIO.StringIO()
+			if version:
+				targetDir =  os.path.join(os.path.split(os.path.dirname(sdmtools.folder))[0], 'temp_{}'.format(uuid.uuid4())) # temp SDMTools base directory - to rename after deleting old one
+				oldSettings = '{}'
 
-						s.write(response.read())
+				for dirpath, dirs, files in os.walk(os.path.dirname(sdmtools.folder)):
+					for f in files:
+						if f == 'settings.json':
+							oldSettings = json.load(open(os.path.join(dirpath, f)))
 
-						with zipfile.ZipFile(s) as zip:
-							sourceBase = os.path.split(zip.namelist()[0])[0]
+				try:
+					response = urllib2.urlopen(version['zipball_url'])
+					s = StringIO.StringIO()
 
-							for file in zip.namelist():
-								fileName = os.path.split(file)[1]
+					s.write(response.read())
 
-								if fileName != 'settings.json': # Don't want to override this
+					with zipfile.ZipFile(s) as zip:
+						sourceBase = os.path.split(zip.namelist()[0])[0]
+
+						for file in zip.namelist():
+							fileName = os.path.split(file)[1]
+
+							if fileName != 'settings.json': # Don't want to override this
+								writeFileWithStructure(zip.read(file), file, baseDir=targetDir)
+							else:
+								settingsData = json.loads(zip.read(file))
+								overwriteSettings = settingsData.get('forceOverwrite', False)
+
+								if overwriteSettings:
 									writeFileWithStructure(zip.read(file), file, baseDir=targetDir)
-								else:
-									settingsData = json.loads(zip.read(file))
-									overwriteSettings = settingsData.get('forceOverwrite', False)
+								else: # Line by line merge
+									targetSettings = open(changeBaseDir(file, targetDir), 'w+')
+									mergedJson = mergeJsonFiles(json.load(zip.open(file)), oldSettings)
+									mergedJson['version'] = version['tag_name']
+									mergedJson['autoCheckUpdates'] = autoCheckUpdates
 
-									if overwriteSettings:
-										writeFileWithStructure(zip.read(file), file, baseDir=targetDir)
-									else: # Line by line merge
-										targetSettings = open(changeBaseDir(file, targetDir), 'w+')
-										mergedJson = mergeJsonFiles(json.load(zip.open(file)), oldSettings)
-										mergedJson['version'] = version['tag_name']
-										mergedJson['autoCheckUpdates'] = autoCheckUpdates
+									json.dump(mergedJson, targetSettings, sort_keys=True, indent=4, separators=(',', ': '))
 
-										json.dump(mergedJson, targetSettings, sort_keys=True, indent=4, separators=(',', ': '))
+					oldFolder = os.path.dirname(sdmtools.folder)
+					shutil.rmtree(oldFolder) # Delete old folder
+					os.rename(targetDir, oldFolder)
 
-						oldFolder = os.path.dirname(sdmtools.folder)
-						shutil.rmtree(oldFolder) # Delete old folder
-						os.rename(targetDir, oldFolder)
+					hou.ui.displayMessage('Successfully installed {}!'.format(version['tag_name']), title='SDMTools updates')
 
-						hou.ui.displayMessage('Successfully installed {}!'.format(version['tag_name']), title='SDMTools updates')
-
-					except urllib2.URLError, e:
-						hou.ui.displayMessage('Error when downloading new version: {}'.format(e), title='SDMTools Updates', severity=hou.severityType.Error)
-						return
-				else:
-					hou.ui.displayMessage('Error loading version from selection. Please try again.', title='SDMTools Updates', severity=hou.severityType.Error)
+				except urllib2.URLError, e:
+					hou.ui.displayMessage('Error when downloading new version: {}'.format(e), title='SDMTools Updates', severity=hou.severityType.Error)
 					return
+			else:
+				hou.ui.displayMessage('Error loading version from selection. Please try again.', title='SDMTools Updates', severity=hou.severityType.Error)
+				return
 	else:
 		hou.ui.displayMessage('No updates available', title='SDMTools Updates')
