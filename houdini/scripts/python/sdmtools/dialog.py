@@ -10,7 +10,7 @@ from PySide2.QtWidgets import *
 from PySide2.QtUiTools import QUiLoader
 
 import sdmtools
-from sdmtools.fileutils import getLargerVersions, writeFileWithStructure, changeBaseDir, mergeJsonFiles
+from sdmtools.fileutils import getLargerVersions, writeFileWithStructure, changeBaseDir, mergeDict
 
 class CheckForUpdatesDialog(QDialog):
 	def __init__(self, newVersions, autoCheckUpdates):
@@ -169,7 +169,7 @@ def checkForUpdates():
 									writeFileWithStructure(zip.read(file), file, baseDir=targetDir)
 								else: # Line by line merge
 									targetSettings = open(changeBaseDir(file, targetDir), 'w+')
-									mergedJson = mergeJsonFiles(json.load(zip.open(file)), oldSettings)
+									mergedJson = mergeDict(json.load(zip.open(file)), oldSettings)
 									mergedJson['version'] = version['tag_name']
 									mergedJson['autoCheckUpdates'] = autoCheckUpdates
 

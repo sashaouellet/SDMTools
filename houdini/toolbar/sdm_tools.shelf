@@ -323,18 +323,15 @@ main()]]></script>
 The default settings for this tool do not perform any scaling on the found images. First, Global Scale is calculated on all the images. Any images that still exceed the resolution set in "Max Resolution" will be further scaled down. By default, "None" means there is no max resolution. Choose "Custom" if you would like to specify a resolution other than the options provided.
 
 Created by [Sasha Ouellet|http://www.sashaouellet.com]]]></helpText>
-    <script scriptType="python"><![CDATA[import os, sys
-import imghdr
-import subprocess
-from PIL import Image
+    <script scriptType="python"><![CDATA[import os
 import sdmtools
+from sdmtools.image import convertImageToRAT, isImage
+from sdmtools.fileutils import isDescendant, getRelativeToHip, getAllFileReferences
 
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 from PySide2.QtUiTools import QUiLoader
-
-ALTERNATE_IMAGE_EXTS = ['.hdr']
 
 class OutputSettingsDialog(QDialog):
     def __init__(self):
@@ -361,8 +358,6 @@ class OutputSettingsDialog(QDialog):
         self.ui.LNE_maxRes.setEnabled(index == 6)
 
 def main():
-    hipDir = hou.getenv('HIP')
-
     dialog = OutputSettingsDialog()
 
     scaleOptions = [100.0, 75.0, 66.66, 50.0, 33.33, 25.0]
@@ -382,70 +377,26 @@ def main():
             return
 
     refs = hou.fileReferences()
-    converted = 0
+    conversions = {}
 
     with hou.InterruptableOperation('Converting images to RAT...') as operation:
-        for parm, f in refs:
+        for _, f in refs:
             f = hou.expandString(f)
 
-            if os.path.isfile(f) and os.path.exists(f) and isDescendant(f, hipDir) and isImage(f):
-                newPath = convertImage(f, maxDim, scale)
+            if os.path.isfile(f) and os.path.exists(f) and isDescendant(f) and isImage(f):
+                newPath = convertImageToRAT(f, maxDim, scale)                
+                conversions[f] = getRelativeToHip(newPath)
+    
+    allRefs = getAllFileReferences()
+    
+    for parm, ref in allRefs:
+        newPath = conversions.get(ref)
+        
+        if newPath:
+            parm.set(newPath)
 
-                parm.set(getRelativeToHip(newPath))
-
-                converted += 1
-
-    hou.ui.displayMessage('Done converting {} image(s)'.format(converted), title='Conversion Complete')
-
-def isImage(file):
-    if imghdr.what(file) is not None:
-        return True
-
-    path, ext = os.path.splitext(file)
-
-    if ext in ALTERNATE_IMAGE_EXTS:
-        return True
-
-    return False
-
-def convertImage(file, maxDim, scale):
-    args = [os.path.join(hou.getenv('HFS'), 'bin', 'icp')]
-    scale /= 100.0
-    resolution = hou.imageResolution(file)
-    width = float(resolution[0]) * scale
-    height = float(resolution[1]) * scale
-
-    resizeFactor = 1.0
-
-    if maxDim != -1: # Only calculate if user hasn't selected 'None'
-        resizeFactor = float(maxDim) / width
-        resizeFactor = min(resizeFactor, float(maxDim) / height) # if a smaller ratio, use that
-
-    if resizeFactor < 1.0: # only want to scale down
-        scale *= resizeFactor
-
-    args.append('-u') # uncompressed, if supported
-
-    args.append('-s')
-    args.append(str(float(scale * 100)))
-
-    newPath = '{}.rat'.format(os.path.splitext(file)[0])
-
-    args.append(file)
-    args.append(newPath)
-
-    subprocess.call(args)
-
-    return newPath
-
-def isDescendant(file, root):
-    return file.startswith(root)
-
-def getRelativeToHip(file):
-    hip = hou.getenv('HIP')
-
-    return os.path.normpath(file.replace(hip, os.path.join('$HIP', '')))
-
+    hou.ui.displayMessage('Done converting {} image(s)'.format(len(conversions)), title='Conversion Complete')
+    
 main()]]></script>
   </tool>
 
