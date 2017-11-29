@@ -23,10 +23,6 @@ class Sequence():
 		if self._frames:
 			self._range = (self._frames[0].getNumber(), self._frames[-1].getNumber())
 
-		print self.getMissingFrames()
-		print Sequence.prettyPrintFrameList(self.getFramesAsNumberList())
-		print self.getFormatted()
-
 	def _getFrameListFromDir(self, dir, prefix, ext, range):
 		"""Given a directory to look in, retrieves the first found sequence that fits
 		the given specifications for prefix and extension. If the range specified
@@ -274,6 +270,3 @@ class Frame():
 
 	def __str__(self):
 		return 'Frame {} from: {} ({})'.format(self._number, self._prefix, self._ext)
-
-testDir = '/Volumes/Macintosh MD/Users/spaouellet/Documents/houdini/toolTests/render'
-seq = Sequence(testDir, ext='png')
