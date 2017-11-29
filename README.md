@@ -4,3 +4,5 @@ This toolset is meant to facilitate certain workflows of not only my Visual Effe
 Currently, this is a small repository of Houdini shelf tools, HDAs, and menu scripts but I anticipate to broaden this to other packages.
 
 The toolset is very self-contained once you install it (and it even installs itself!). Any updates I release to GitHub you can automatically download and install from within Houdini. In the future, I will bolster the installation script so that you can cherry pick what tools/features you want installed.
+
+Installation instructions: https://github.com/sashaouellet/SDMTools/wiki/Installation
