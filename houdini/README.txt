@@ -1,4 +1,4 @@
-LAST UPDATED: November 21, 2017
+LAST UPDATED: November 30, 2017
 
 This library is written and maintained by Sasha Ouellet (www.sashaouellet.com)
 
@@ -11,9 +11,9 @@ The intention of this toolset is to provide sought after functionality for Houdi
 - Execute the 'install.py' python script from a shell, i.e.:
 
 cd path/to/SDMToolsDirectory/houdini
-python install.py path/to/your/houdini.env
+python install.py {HOUDINI_VERSION}
 
-- If you are unsure on the path of the houdini.env file, you can run 'python install.py -h' for some tips.
+(Note that HOUDINI_VERSION should be formatted like 16.0, or 16.0.557, etc.)
 
 - This will properly update the given houdini.env with the correct environment variables to receive all configurations, shelves, HDAs, etc.
 
