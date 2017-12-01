@@ -334,7 +334,7 @@ from PySide2.QtWidgets import *
 from PySide2.QtUiTools import QUiLoader
 
 class OutputSettingsDialog(QDialog):
-    def __init__(self):
+    def __init__(self, references):
         QDialog.__init__(self)
 
         uiPath = os.path.join(sdm.houdini.folder, 'ui', 'SHELF_convertRat.ui')
@@ -349,6 +349,10 @@ class OutputSettingsDialog(QDialog):
         self.ui.LNE_maxRes.setValidator(QDoubleValidator())
         self.ui.LNE_maxRes.setEnabled(False)
         self.ui.CMB_maxRes.currentIndexChanged.connect(self.handleMaxResOption)
+        self.ui.LST_files.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        
+        self.populateRows(references)
+        self.ui.LST_files.selectAll()
 
         self.ret = self.ui.exec_()
 
@@ -356,9 +360,18 @@ class OutputSettingsDialog(QDialog):
 
     def handleMaxResOption(self, index):
         self.ui.LNE_maxRes.setEnabled(index == 6)
+        
+    def populateRows(self, references):
+        if not references:
+            self.ui.LST_files.addItem('Nothing!')
+            return
+        for ref in references:
+            if os.path.isfile(ref) and os.path.exists(ref) and isDescendant(ref) and isImage(ref):
+                self.ui.LST_files.addItem(getRelativeToHip(ref))
 
 def main():
-    dialog = OutputSettingsDialog()
+    allRefs = getAllFileReferences()
+    dialog = OutputSettingsDialog(list(set([ref[1] for ref in allRefs])))
 
     scaleOptions = [100.0, 75.0, 66.66, 50.0, 33.33, 25.0]
     maxResOptions = [-1, 4096.0, 2048.0, 1024.0, 512.0, 256.0, -2]
@@ -376,18 +389,13 @@ def main():
             hou.ui.displayMessage('Invalid input specified for max resolution (not a floating point number). Please try again.', title='Input Error', severity=hou.severityType.Error)
             return
 
-    refs = hou.fileReferences()
+    refs = [hou.expandString(i.text()) for i in dialog.ui.LST_files.selectedItems()]
     conversions = {}
 
     with hou.InterruptableOperation('Converting images to RAT...') as operation:
-        for _, f in refs:
-            f = hou.expandString(f)
-
-            if os.path.isfile(f) and os.path.exists(f) and isDescendant(f) and isImage(f):
-                newPath = convertImageToRAT(f, maxDim, scale)
-                conversions[f] = getRelativeToHip(newPath)
-
-    allRefs = getAllFileReferences()
+        for f in refs:
+            newPath = convertImageToRAT(f, maxDim, scale)
+            conversions[f] = getRelativeToHip(newPath)
 
     for parm, ref in allRefs:
         newPath = conversions.get(ref)

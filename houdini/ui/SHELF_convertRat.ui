@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>322</width>
-    <height>141</height>
+    <height>265</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,16 +17,6 @@
    <property name="fieldGrowthPolicy">
     <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
    </property>
-   <item row="3" column="1">
-    <widget class="QDialogButtonBox" name="buttonBox">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-     </property>
-    </widget>
-   </item>
    <item row="0" column="0">
     <widget class="QLabel" name="LBL_globalScale">
      <property name="toolTip">
@@ -34,16 +24,6 @@
      </property>
      <property name="text">
       <string>Global Scale</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="0">
-    <widget class="QLabel" name="LBL_maxRes">
-     <property name="toolTip">
-      <string>Any images that exceed this resolution (in width or height, after &quot;Global Scale&quot; has been applied) will be further scaled down to meet this max resolution</string>
-     </property>
-     <property name="text">
-      <string>Max Output Resolution</string>
      </property>
     </widget>
    </item>
@@ -81,13 +61,13 @@
      </item>
     </widget>
    </item>
-   <item row="2" column="1">
-    <widget class="QLineEdit" name="LNE_maxRes">
-     <property name="inputMask">
-      <string/>
+   <item row="1" column="0">
+    <widget class="QLabel" name="LBL_maxRes">
+     <property name="toolTip">
+      <string>Any images that exceed this resolution (in width or height, after &quot;Global Scale&quot; has been applied) will be further scaled down to meet this max resolution</string>
      </property>
-     <property name="readOnly">
-      <bool>false</bool>
+     <property name="text">
+      <string>Max Output Resolution</string>
      </property>
     </widget>
    </item>
@@ -128,6 +108,43 @@
        <string>Custom</string>
       </property>
      </item>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="QLineEdit" name="LNE_maxRes">
+     <property name="inputMask">
+      <string/>
+     </property>
+     <property name="readOnly">
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="1">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="0" colspan="2">
+    <widget class="QListWidget" name="LST_files">
+     <property name="editTriggers">
+      <set>QAbstractItemView::NoEditTriggers</set>
+     </property>
+     <property name="alternatingRowColors">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0">
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>Images to convert:</string>
+     </property>
     </widget>
    </item>
   </layout>
