@@ -70,7 +70,7 @@ main()
 				<label>Check For Updates...</label>
 				<scriptCode>
 <![CDATA[
-from sdmtools.dialog import checkForUpdates
+from sdm.houdini.dialog import checkForUpdates
 
 checkForUpdates()
 ]]>
@@ -78,10 +78,10 @@ checkForUpdates()
 			</scriptItem>
 			<separatorItem id="sdmTools_menu_sep_1"/>
 			<scriptItem id="about">
-				<label>About SDM Tools</label>
+				<label>About SDMTools</label>
 				<scriptCode>
 <![CDATA[
-from sdmtools.dialog import about
+from sdm.houdini.dialog import about
 
 about()
 ]]>

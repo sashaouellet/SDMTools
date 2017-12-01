@@ -9,14 +9,14 @@ from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 from PySide2.QtUiTools import QUiLoader
 
-import sdmtools
-from sdmtools.fileutils import getLargerVersions, writeFileWithStructure, changeBaseDir, mergeDict
+import sdm.houdini
+from sdm.houdini.fileutils import getLargerVersions, writeFileWithStructure, changeBaseDir, mergeDict
 
 class CheckForUpdatesDialog(QDialog):
 	def __init__(self, newVersions, autoCheckUpdates):
 		QDialog.__init__(self)
 
-		uiPath = os.path.join(sdmtools.folder, 'ui', 'MENU_checkForUpdates.ui')
+		uiPath = os.path.join(sdm.houdini.folder, 'ui', 'MENU_checkForUpdates.ui')
 
 		file = QFile(uiPath)
 		file.open(QFile.ReadOnly)
@@ -78,7 +78,7 @@ def about():
 	webbrowser.open('http://www.sashaouellet.com')
 
 def checkForUpdates():
-	settingsJsonPath = os.path.join(sdmtools.folder, 'settings.json')
+	settingsJsonPath = os.path.join(sdm.houdini.folder, 'settings.json')
 	currVer = 'v1.0.0'
 	autoCheckUpdates = False
 	settingsJson = {}

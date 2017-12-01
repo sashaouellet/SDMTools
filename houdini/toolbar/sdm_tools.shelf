@@ -5,7 +5,7 @@
  Note, that two definitions of the same element are not allowed in
  a single file. -->
 
-  <toolshelf name="com.sashaouellet::sdm_tools" label="SDM Tools">
+  <toolshelf name="com.sashaouellet::sdm_tools" label="SDMTools">
     <memberTool name="com.sashaouellet::savprefstostuhome::1.0.0"/>
     <memberTool name="com.sashaouellet::multiflipbook::1.1.0"/>
     <memberTool name="com.sashaouellet::cleansubnet::1.0.0"/>
@@ -324,9 +324,9 @@ The default settings for this tool do not perform any scaling on the found image
 
 Created by [Sasha Ouellet|http://www.sashaouellet.com]]]></helpText>
     <script scriptType="python"><![CDATA[import os
-import sdmtools
-from sdmtools.image import convertImageToRAT, isImage
-from sdmtools.fileutils import isDescendant, getRelativeToHip, getAllFileReferences
+import sdm.houdini
+from sdm.houdini.image import convertImageToRAT, isImage
+from sdm.houdini.fileutils import isDescendant, getRelativeToHip, getAllFileReferences
 
 from PySide2.QtCore import *
 from PySide2.QtGui import *
@@ -337,7 +337,7 @@ class OutputSettingsDialog(QDialog):
     def __init__(self):
         QDialog.__init__(self)
 
-        uiPath = os.path.join(sdmtools.folder, 'ui', 'SHELF_convertRat.ui')
+        uiPath = os.path.join(sdm.houdini.folder, 'ui', 'SHELF_convertRat.ui')
 
         file = QFile(uiPath)
         file.open(QFile.ReadOnly)
@@ -384,19 +384,19 @@ def main():
             f = hou.expandString(f)
 
             if os.path.isfile(f) and os.path.exists(f) and isDescendant(f) and isImage(f):
-                newPath = convertImageToRAT(f, maxDim, scale)                
+                newPath = convertImageToRAT(f, maxDim, scale)
                 conversions[f] = getRelativeToHip(newPath)
-    
+
     allRefs = getAllFileReferences()
-    
+
     for parm, ref in allRefs:
         newPath = conversions.get(ref)
-        
+
         if newPath:
             parm.set(newPath)
 
     hou.ui.displayMessage('Done converting {} image(s)'.format(len(conversions)), title='Conversion Complete')
-    
+
 main()]]></script>
   </tool>
 

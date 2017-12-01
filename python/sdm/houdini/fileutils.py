@@ -177,12 +177,11 @@ def getAllFileReferences():
 
     for node in hou.node('/').allSubChildren():
     	for parm in node.globParms('*'):
-    		try:
+    		template = parm.parmTemplate()
+    		if isinstance(template, hou.StringParmTemplate) and template.stringType() == hou.stringParmType.FileReference:
     			val = parm.evalAsString()
 
-    			if os.path.isfile(val) and isDescendant(val):
+    			if val and os.path.isfile(val) and isDescendant(val):
     				refs.append((parm, val))
-    		except hou.TypeError:
-    			continue
 
     return refs

@@ -125,18 +125,26 @@ class Sequence():
 	def getExt(self):
 		return self._frames[0].getExt()
 
-	def getMissingFrames(self):
+	def getMissingFrames(self, format=False):
 		"""Gets the list of frame numbers that are missing from this sequence
 
 		Returns:
 		    list: The list of missing frame numbers
+
+		Args:
+		    format (bool, optional): Convenience for immediately returning a formatted
+		    	list of the missing frames. By default still returns the list, when True
+		    	returns a string with the pretty-printed list
 		"""
-		current = [f.getNumber() for f in self._frames]
+		current = self.getFramesAsNumberList()
 		missing = []
 
 		for i in range(*self._range):
 			if i not in current:
 				missing.append(i)
+
+		if format:
+			return Sequence.prettyPrintFrameList(missing)
 
 		return missing
 

@@ -1,10 +1,10 @@
 import os, json
 
-import sdmtools
-from sdmtools.dialog import checkForUpdates
+import sdm.houdini
+from sdm.houdini.dialog import checkForUpdates
 
 def checkUpdates():
-	settingsPath = os.path.join(sdmtools.folder, 'settings.json')
+	settingsPath = os.path.join(sdm.houdini.folder, 'settings.json')
 
 	if os.path.exists(settingsPath):
 			with open(settingsPath) as file:
