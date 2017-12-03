@@ -35,8 +35,8 @@ class PreferencesDialog(QDialog):
 		shelfToolsDir = os.path.join(sdm.houdini.folder, 'toolbar')
 		allTools = glob.glob(os.path.join(shelfToolsDir, '*.shelf'))
 
-		# Add all tools as enabled initially
-		for tool in allTools:
+		# Add all tools as enabled initially, except for sdm_tools which is the shelf file itself
+		for tool in allTools if tool != 'sdm_tools':
 			toolName = os.path.splitext(os.path.split(tool)[1])[0]
 
 			self._addTool(toolName)
