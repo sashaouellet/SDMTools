@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shelfDocument>
+  <!-- This file contains definitions of shelves, toolbars, and tools.
+ It should not be hand-edited when it is being used by the application.
+ Note, that two definitions of the same element are not allowed in
+ a single file. -->
+
+  <tool name="com.sashaouellet::cleansubnet::1.0.0" label="Clean Subnet" icon="hicon:/SVGIcons.index?BUTTONS_clear.svg">
+    <helpText><![CDATA[= Clean Subnet =
+
+"""Removes the entire tree structure from selected nodes of a subnet"""
+
+This is a convienence tool for cleaning up large FBX's. Note that the selection is the node trees you want to delete.
+
+Created by [Sasha Ouellet|http://www.sashaouellet.com]]]></helpText>
+    <script scriptType="python"><![CDATA[def main():
+    selected = hou.selectedNodes()
+
+    if selected and len(selected) == 1:
+        subnet = selected[0] # Selected subnet
+        topLevel = [c for c in subnet.children() if not c.inputConnections()] # All nodes inside the subnet with no incoming connections are assumed to be top level parents
+        potentialDelete = ['System', 'Unlabeled_Markers'] # Node names for nodes that we probably will always delete
+        bestGuesses = [topLevel.index(n) for n in topLevel if n.name() in potentialDelete] # We guess from the children nodes based on potentialDelete
+
+        # bestGuesses is passed as the default choices, which will highlight them automatically and queue for deletion
+        # We clear this selection on cancel, so that they don't accidentally delete anything
+        toDelete = [topLevel[i] for i in hou.ui.selectFromList([n.name() for n in topLevel], default_choices=bestGuesses, message='Select top level parents that you want to DELETE', title='Delete Trees')]
+
+        if toDelete and hou.ui.displayConfirmation('You are about to delete: {} and all of the connections to these nodes. Are you sure you want to proceed?'.format(', '.join([n.name() for n in toDelete]))):
+            for node in toDelete:
+                deleteTree(node)
+
+        subnet.layoutChildren()
+    else:
+        hou.ui.displayMessage('Please select a single node for cleanup', severity=hou.severityType.Error)
+        return
+
+
+def deleteTree(node):
+    if not node.isLockedHDA() and not node.isInsideLockedHDA():
+        for connected in [n.outputNode() for n in node.outputConnections()]:
+            deleteTree(connected) # Recursively delete output connections
+        node.destroy()
+main()]]></script>
+  </tool>
+</shelfDocument>

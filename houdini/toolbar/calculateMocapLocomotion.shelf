@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shelfDocument>
+  <!-- This file contains definitions of shelves, toolbars, and tools.
+ It should not be hand-edited when it is being used by the application.
+ Note, that two definitions of the same element are not allowed in
+ a single file. -->
+
+  <tool name="com.sashaouellet::calculatemocaplocomotion::1.0.0-alpha" label="Calculate Mocap Locomotion" icon="hicon:/SVGIcons.index?OBJ_simplemale.svg">
+    <helpText><![CDATA[= Calculate Mocap Locomotion =
+
+"""Applies physical transforms to mocap rig based on stride length/speed."""
+
+This tool will automatically calculate a stride length from the frame range that is selected and the 2 bones selected. It is recommended you choose the feet bones, and the tool will automatically pick those for you to begin with. The transform is applied to the root of the mocap rig.
+
+Created by [Sasha Ouellet|http://www.sashaouellet.com]]]></helpText>
+    <script scriptType="python"><![CDATA[import sys, math
+from numpy.linalg import norm
+from numpy import array
+
+FRAME_TIMEOUT = 5
+
+def main():
+    selection = hou.selectedNodes()
+
+    if selection:
+        subnet = selection[0]
+        bones = [n for n in subnet.children() if n.type().name() == 'bone']
+        boneNameList = [b.name() for b in bones]
+        bestGuess = [n.name() for n in subnet.glob('*LeftFoot* *RightFoot*') if n.type().name() == 'bone']
+        selectedBones = [bones[i] for i in hou.ui.selectFromList(boneNameList, default_choices=[boneNameList.index(g) for g in bestGuess], message='Select 2 bones that serve as reference for the stride length', title='Bone Selection')]
+
+        if len(selectedBones) != 2:
+            hou.ui.displayMessage('Please select exactly 2 bones to analyze stride length ({} selected)'.format(len(selectedBones)), severity=hou.severityType.Error)
+            return
+
+        nulls = [n.inputConnections()[0].inputNode() for n in selectedBones]
+
+        frameStart = int(hou.playbar.playbackRange()[0])
+        frameEnd = int(hou.playbar.playbackRange()[1])
+        frange = hou.ui.readMultiInput('Select the frame range to analyze the clip from', ['Start', 'End'], initial_contents=[str(frameStart), str(frameEnd)])
+
+        # Range requires validation
+
+        frameStart = int(frange[1][0])
+        frameEnd = int(frange[1][1])
+
+        minDist = sys.float_info.max
+        minFrame = -1
+        minLock = False
+        minNoChange = 0
+
+        maxDist = sys.float_info.min
+        maxFrame = -1
+        maxLock = False
+        maxNoChange = 0
+
+        # Choose axis to apply transformation
+#        axes = ['X', 'Y', 'Z']
+#        axis = axes[hou.ui.selectFromList(axes, default_choices=[0], message='Select axis to apply transformation along', title='Axis Selection')[0]].lower()
+#
+#        hips = [n.inputConnections()[0].inputNode() for n in subnet.glob('*Hips*') if n.type().name() == 'bone'][0]
+#        transform = hips.createInputNode(0, 'null', node_name='TRANSFORM')
+#        transformParm = transform.parm('t{}'.format(axis))
+#
+#        subnet.layoutChildren()
+
+        pastValue = 0.0
+        pastDist = 0.0
+        distThresh = 0.6
+
+        for f in range(frameStart, frameEnd + 1):
+            hou.setFrame(f)
+
+            posArr = []
+            keyframe = hou.Keyframe()
+
+            keyframe.setFrame(f)
+
+            for null in nulls:
+                transformMatrix = null.worldTransform()
+                potentialPointNodes = [n for n in null.children() if n.type().name() == 'add']
+
+                if not potentialPointNodes:
+                    hou.ui.displayMessage('Node {} didn\'t have expected Add node inside. Aborting.'.format(null.path()), severity=hou.severityType.Error)
+                    return
+
+                point = potentialPointNodes[0]
+                pointPos = hou.Vector3([0.0, 0.0, 0.0])
+
+                worldLocation = pointPos * transformMatrix
+
+                posArr.append(worldLocation)
+
+            dist = norm(array(posArr[0]) - array(posArr[1]))
+            #dist = abs(posArr[0][2] - posArr[1][2])
+            #dist = pastDist - posArr[1][2]
+            deltaDist = abs(dist - pastDist)
+
+            if deltaDist <= distThresh: # Lifoff from back foot, pull forward
+                print 'Set pull forward key'
+                keyframe = hou.Keyframe()
+
+                keyframe.setFrame(f - 1)
+                keyframe.setValue(pastValue)
+
+                #transformParm.setKeyframe(keyframe)
+
+                pastDist = dist
+
+            if dist <= 2: # end of stride
+                print 'set end key'
+                keyframe = hou.Keyframe()
+
+                keyframe.setFrame(f)
+                keyframe.setValue(pastValue + abs(dist - pastDist))
+
+                #transformParm.setKeyframe(keyframe)
+
+                pastValue = pastValue + abs(dist - pastDist)
+
+            print '{}\t-\t{}\t-\t{}'.format(f, dist, deltaDist)
+
+            pastDist = dist
+
+            if dist > maxDist and not maxLock:
+                maxDist = dist
+                maxFrame = f
+            else:
+                maxNoChange += 1
+
+                if maxNoChange >= FRAME_TIMEOUT:
+                    maxLock = True
+
+            if dist < minDist and not minLock:
+                minDist = dist
+                minFrame = f
+            else:
+                minNoChange += 1
+
+                if minNoChange >= FRAME_TIMEOUT:
+                    minLock = True
+
+        strideLength = abs(maxDist - minDist)
+        strideTime = abs(maxFrame - minFrame) + 1
+
+        # DEBUG
+        print '-'*30
+        print 'Stride length / Stride time (frames):', strideLength, strideTime
+        print 'Min distance @ frame:', minDist, minFrame
+        print 'Max distance @ frame:', maxDist, maxFrame
+        print '-'*30
+
+        axes = ['X', 'Y', 'Z']
+        axis = axes[hou.ui.selectFromList(axes, default_choices=[0], message='Select axis to apply transformation along', title='Axis Selection')[0]].lower()
+        hips = [n.inputConnections()[0].inputNode() for n in subnet.glob('*Hips*') if n.type().name() == 'bone'][0]
+
+        transform = hips.createInputNode(0, 'null', node_name='TRANSFORM')
+
+        transform.parm('t{}'.format(axis)).setExpression('$F * {}'.format(strideLength / strideTime))
+
+        subnet.layoutChildren()
+    else:
+        hou.ui.displayMessage('Please select a subnet where your FBX has been imported', severity=hou.severityType.Error)
+        return
+
+
+main()]]></script>
+  </tool>
+</shelfDocument>

@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shelfDocument>
+  <!-- This file contains definitions of shelves, toolbars, and tools.
+ It should not be hand-edited when it is being used by the application.
+ Note, that two definitions of the same element are not allowed in
+ a single file. -->
+
+  <tool name="com.sashaouellet::convertrat::1.0.0" label="Convert to RAT" icon="SHELF_ConvertToRAT">
+    <helpText><![CDATA[= Convert to RAT =
+
+"""Converts all referenced image files to RAT format, with the option to scale down and/or limit to a specific resolution."""
+
+The default settings for this tool do not perform any scaling on the found images. First, Global Scale is calculated on all the images. Any images that still exceed the resolution set in "Max Resolution" will be further scaled down. By default, "None" means there is no max resolution. Choose "Custom" if you would like to specify a resolution other than the options provided.
+
+Created by [Sasha Ouellet|http://www.sashaouellet.com]]]></helpText>
+    <script scriptType="python"><![CDATA[import os
+import sdm.houdini
+from sdm.houdini.image import convertImageToRAT, isImage
+from sdm.houdini.fileutils import isDescendant, getRelativeToHip, getAllFileReferences
+
+from PySide2.QtCore import *
+from PySide2.QtGui import *
+from PySide2.QtWidgets import *
+from PySide2.QtUiTools import QUiLoader
+
+class OutputSettingsDialog(QDialog):
+    def __init__(self, references):
+        QDialog.__init__(self)
+
+        uiPath = os.path.join(sdm.houdini.folder, 'ui', 'SHELF_convertRat.ui')
+
+        file = QFile(uiPath)
+        file.open(QFile.ReadOnly)
+
+        loader = QUiLoader()
+        self.ui = loader.load(file)
+
+        self.ui.setStyleSheet(hou.qt.styleSheet())
+        self.ui.LNE_maxRes.setValidator(QDoubleValidator())
+        self.ui.LNE_maxRes.setEnabled(False)
+        self.ui.CMB_maxRes.currentIndexChanged.connect(self.handleMaxResOption)
+        self.ui.LST_files.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        
+        self.populateRows(references)
+        self.ui.LST_files.selectAll()
+
+        self.ret = self.ui.exec_()
+
+        hou.session.dummy = self.ui # Keeps the dialog open
+
+    def handleMaxResOption(self, index):
+        self.ui.LNE_maxRes.setEnabled(index == 6)
+        
+    def populateRows(self, references):
+        if not references:
+            self.ui.LST_files.addItem('Nothing!')
+            return
+        for ref in references:
+            if os.path.isfile(ref) and os.path.exists(ref) and isDescendant(ref) and isImage(ref):
+                self.ui.LST_files.addItem(getRelativeToHip(ref))
+
+def main():
+    allRefs = getAllFileReferences()
+    dialog = OutputSettingsDialog(list(set([ref[1] for ref in allRefs])))
+
+    scaleOptions = [100.0, 75.0, 66.66, 50.0, 33.33, 25.0]
+    maxResOptions = [-1, 4096.0, 2048.0, 1024.0, 512.0, 256.0, -2]
+
+    if dialog.ret == QDialog.Rejected:
+        return
+
+    maxDim = maxResOptions[dialog.ui.CMB_maxRes.currentIndex()]
+    scale = scaleOptions[dialog.ui.CMB_globalScale.currentIndex()]
+
+    if maxDim == -2: # Custom dimension chosen, grab from line edit
+        try:
+            maxDim = float(dialog.ui.LNE_maxRes.text())
+        except ValueError:
+            hou.ui.displayMessage('Invalid input specified for max resolution (not a floating point number). Please try again.', title='Input Error', severity=hou.severityType.Error)
+            return
+
+    refs = [hou.expandString(i.text()) for i in dialog.ui.LST_files.selectedItems()]
+    conversions = {}
+
+    with hou.InterruptableOperation('Converting images to RAT...') as operation:
+        for f in refs:
+            newPath = convertImageToRAT(f, maxDim, scale)
+            conversions[f] = getRelativeToHip(newPath)
+
+    for parm, ref in allRefs:
+        newPath = conversions.get(ref)
+
+        if newPath:
+            parm.set(newPath)
+
+    hou.ui.displayMessage('Done converting {} image(s)'.format(len(conversions)), title='Conversion Complete')
+
+main()]]></script>
+  </tool>
+</shelfDocument>

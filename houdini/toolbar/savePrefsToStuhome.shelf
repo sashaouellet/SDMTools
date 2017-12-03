@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shelfDocument>
+  <!-- This file contains definitions of shelves, toolbars, and tools.
+ It should not be hand-edited when it is being used by the application.
+ Note, that two definitions of the same element are not allowed in
+ a single file. -->
+
+  <tool name="com.sashaouellet::savprefstostuhome::1.0.0" label="Save Prefs to Stuhome" icon="hicon:/SVGIcons.index?VOP_subnetconnector.svg">
+    <helpText><![CDATA[= Save Prefs to Stuhome =
+
+"""Saves desktops and other preferences on the network"""
+
+This tool is meant to work alongside a bash_custom that copies your houdini16.0 folder from ~/mount/stuhome to ~/.
+
+Example bash_custom:
+
+rm -rf ~/houdini16.0
+
+cp -r ~/mount/stuhome/houdini16.0 ~/houdini16.0
+
+WARNING:
+    Do not use this tool on Windows as it will crash Houdini. Your Houdini preferences are already synced on the network anyway on Windows.
+
+Created by [Sasha Ouellet|http://www.sashaouellet.com]]]></helpText>
+    <script scriptType="python"><![CDATA[import os
+
+def main():
+    if not os.path.exists('~/mount/stuhome/houdini16.0'):
+        return
+
+    os.system('rm -rf ~/mount/stuhome/houdini16.0')
+    os.system('cp -r ~/houdini16.0 ~/mount/stuhome/houdini16.0')
+
+    hou.ui.displayMessage('Successfully copied preferences')
+
+main()]]></script>
+  </tool>
+</shelfDocument>
