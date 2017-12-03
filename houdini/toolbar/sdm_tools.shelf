@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shelfDocument>
+  <!-- This file contains definitions of shelves, toolbars, and tools.
+ It should not be hand-edited when it is being used by the application.
+ Note, that two definitions of the same element are not allowed in
+ a single file. -->
+
+  <toolshelf name="com.sashaouellet::sdm_tools" label="SDMTools">
+    <memberTool name="com.sashaouellet::savprefstostuhome::1.0.0"/>
+    <memberTool name="com.sashaouellet::multiflipbook::1.1.0"/>
+    <memberTool name="com.sashaouellet::cleansubnet::1.0.0"/>
+    <memberTool name="com.sashaouellet::calculatemocaplocomotion::1.0.0-alpha"/>
+    <memberTool name="com.sashaouellet::convertrat::1.0.0"/>
+  </toolshelf>
+
+  <shelfSetEdit name="shelf_set_td" fileLocation="C:/PROGRA~1/SIDEEF~1/HOUDIN~1.671/houdini/toolbar\ShelfDefinitions.shelf">
+    <addMemberToolshelf name="com.sashaouellet::sdm_tools" inPosition="16"/>
+  </shelfSetEdit>
+</shelfDocument>
