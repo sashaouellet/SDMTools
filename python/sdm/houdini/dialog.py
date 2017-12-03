@@ -1,4 +1,4 @@
-import os
+import os, glob
 import hou
 import urllib2, json, zipfile, StringIO, uuid, shutil
 import webbrowser
@@ -10,7 +10,69 @@ from PySide2.QtWidgets import *
 from PySide2.QtUiTools import QUiLoader
 
 import sdm.houdini
-from sdm.houdini.fileutils import getLargerVersions, writeFileWithStructure, changeBaseDir, mergeDict
+from sdm.houdini.fileutils import SettingsFile, getLargerVersions, writeFileWithStructure, changeBaseDir, mergeDict
+from sdm.utils import splitByCamelCase
+
+class PreferencesDialog(QDialog):
+	def __init__(self, settings):
+		QDialog.__init__(self)
+
+		uiPath = os.path.join(sdm.houdini.folder, 'ui', 'MENU_preferences.ui')
+
+		file = QFile(uiPath)
+		file.open(QFile.ReadOnly)
+
+		loader = QUiLoader()
+		self.ui = loader.load(file)
+		self.ui.tools = {}
+		self.ui.madeChanges = False
+		self.settings = settings
+
+		self.ui.LBL_version.setText(self.settings.get('version', 'v1.0.0'))
+		self.ui.CHK_autoCheckUpdates.setChecked(self.settings.get('autoCheckUpdates', False))
+		self.ui.CHK_autoCheckUpdates.clicked.connect(self._handleCheck)
+
+		shelfToolsDir = os.path.join(sdm.houdini.folder, 'toolbar')
+		allTools = glob.glob(os.path.join(shelfToolsDir, '*.shelf'))
+
+		# Add all tools as enabled initially
+		for tool in allTools:
+			toolName = os.path.splitext(os.path.split(tool)[1])[0]
+
+			self._addTool(toolName)
+
+		# No go disable the ones that have been marked as such
+		for tool in self.settings.get('disabledTools', []):
+			self.ui.tools[tool].setChecked(False)
+
+		self.ui.setStyleSheet(hou.qt.styleSheet())
+
+		self.ret = self.ui.exec_()
+
+		hou.session.dummy = self.ui # Keeps the dialog open
+
+	def _handleCheck(self):
+		self.ui.madeChanges = True
+
+	def _addTool(self, name):
+		chk = QCheckBox(' '.join([s.capitalize() for s in splitByCamelCase(name)]))
+		chk.setChecked(True)
+		chk.clicked.connect(self._handleCheck)
+
+		self.ui.LAY_tools.addWidget(chk)
+
+		self.ui.tools[name] = chk
+
+	def getSettings(self):
+		disabledTools = []
+		for tool, chk in self.ui.tools.iteritems():
+			if not chk.isChecked():
+				disabledTools.append(tool)
+
+		self.settings.set('disabledTools', disabledTools)
+		self.settings.set('autoCheckUpdates', self.ui.CHK_autoCheckUpdates.isChecked())
+
+		return self.settings
 
 class CheckForUpdatesDialog(QDialog):
 	def __init__(self, newVersions, autoCheckUpdates):
@@ -189,3 +251,18 @@ def checkForUpdates():
 				return
 	else:
 		hou.ui.displayMessage('No updates available', title='SDMTools Updates')
+
+def showPreferences():
+	settings = SettingsFile()
+
+	dialog = PreferencesDialog(settings)
+
+	if dialog.ret == QDialog.Rejected:
+		return
+
+	if dialog.ui.madeChanges:
+		hou.ui.displayMessage('Changes made will only be reflected once you restart Houdini')
+
+	settings = dialog.getSettings()
+
+	settings.write()

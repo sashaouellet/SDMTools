@@ -6,14 +6,70 @@ __version__ = 1.0.0
 __date__ = 11/27/17
 """
 
+import sdm.houdini
 import hou
 
-import os
+import os, json
 
-DEFAULT_SETTINGS = dict({
-		'version':'v1.0.0',
-		'autoCheckUpdates':'True'
-	})
+class SettingsFile():
+	_settings = dict({
+			'version':'v1.0.0',
+			'disabledTools':['savePrefsToStuhome', 'calculateMocapLocomotion'],
+			'autoCheckUpdates':False
+		})
+
+	def __init__(self):
+		self._settingsJsonPath = os.path.join(sdm.houdini.folder, 'settings.json')
+		settingsFile = open(self._settingsJsonPath, 'r+')
+
+		if not os.path.exists(self._settingsJsonPath):
+			settingsFile = open(self._settingsJsonPath, 'w+')
+
+		try:
+			self._settings = json.loads(settingsFile.read())
+		except ValueError: # Empty, or bad JSON - use defaults
+			pass
+
+	def set(self, setting, value, overwrite=True):
+		"""Given a setting to change and the new value, updates
+		the settings dictionary
+
+		Args:
+		    setting (str): The setting to change
+		    value (any): The new value of the setting
+		    overwrite (bool, optional): By default, existing settings
+		    	will be overwritten by the given value. If this is False,
+		    	existing settings will not be overwritten. Settings that
+		    	didn't exist previously are added regardless of this option
+		"""
+		# Setting exists, but we aren't overwriting
+		if self._settings.get(setting) and not overwrite:
+			return
+
+		self._settings[setting] = value
+
+	def get(self, setting, default=None):
+		"""Given a setting, retrieves its value
+
+		Args:
+		    setting (str): The setting to get the value of
+		    default (any, optional): In the case that the given
+		    	setting does not exist, this will be returned
+		    	instead. By default, None will be returned in
+		    	the event that this does occur.
+
+		Returns:
+		    any: The value of the setting, or the value of 'default'
+		    	if the setting does not exist
+		"""
+		return self._settings.get(setting, default)
+
+	def write(self):
+		settingsFile = open(self._settingsJsonPath, 'r+')
+
+		settingsFile.seek(0)
+		json.dump(self._settings, settingsFile, sort_keys=True, indent=4, separators=(',', ': '))
+		settingsFile.truncate()
 
 def getLargerVersions(compareTo, otherVersions):
 	"""For all the given versions, returns a list of all those that are larger

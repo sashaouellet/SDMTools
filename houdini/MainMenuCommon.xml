@@ -66,6 +66,16 @@ main()
 		<subMenu id="sdmTools_menu">
 			<label>SDMTools</label>
 			<insertBefore>help_menu</insertBefore>
+			<scriptItem id="preferences">
+				<label>Preferences</label>
+				<scriptCode>
+<![CDATA[
+from sdm.houdini.dialog import showPreferences
+
+showPreferences()
+]]>
+				</scriptCode>
+			</scriptItem>
 			<scriptItem id="checkUpdates">
 				<label>Check For Updates...</label>
 				<scriptCode>
