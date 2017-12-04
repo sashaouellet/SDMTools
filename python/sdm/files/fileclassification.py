@@ -11,6 +11,7 @@ class Sequence():
 	_frames = []
 	_dir = ''
 	_range = ()
+	_index = 0
 
 	FRAME_NAME_PATTERN = r'^(?P<prefix>{})[\.\-_](?P<framePadding>\d+)\.(?P<ext>{})$'
 	STANDARD_FRAME_FORMAT = '#'
@@ -29,14 +30,14 @@ class Sequence():
 		is not an empty tuple, the frame list returned is limited to that range
 
 		Args:
-		    dir (str): The directory path to look for a sequence in
-		    prefix (str): A pattern to match the prefix of the file name against
-		    ext (str): A pattern to match the extension of the file against
-		    range (tuple): A tuple representing the allowed start and end range of
-		    	the returned frame lisr. If empty, the full range found is returned
+			dir (str): The directory path to look for a sequence in
+			prefix (str): A pattern to match the prefix of the file name against
+			ext (str): A pattern to match the extension of the file against
+			range (tuple): A tuple representing the allowed start and end range of
+				the returned frame lisr. If empty, the full range found is returned
 
 		Returns:
-		    list: The frame list for the sequence found, empty if no sequence was found
+			list: The frame list for the sequence found, empty if no sequence was found
 		"""
 		frameList = []
 		foundArbitrary = False
@@ -80,14 +81,14 @@ class Sequence():
 		the extension, and is separated from the rest of the file name by one of: '. _ -'
 
 		Args:
-		    file (str): The file name to check, assumed to be only the file
-		    	name, not a full path
-		    prefix (str, optional): The prefix pattern that must be matched, by default
-		    	is a generic alphanumeric regex
-		    ext (str, optional): The extension pattern to match, by default is any extension
+			file (str): The file name to check, assumed to be only the file
+				name, not a full path
+			prefix (str, optional): The prefix pattern that must be matched, by default
+				is a generic alphanumeric regex
+			ext (str, optional): The extension pattern to match, by default is any extension
 
 		Returns:
-		    tuple: A tuple containing the value of the 3 parts: file name prefix, frame padding,
+			tuple: A tuple containing the value of the 3 parts: file name prefix, frame padding,
 				and extension. Returns None if any of these 3 parts was not matched in the file
 				given
 		"""
@@ -129,12 +130,12 @@ class Sequence():
 		"""Gets the list of frame numbers that are missing from this sequence
 
 		Returns:
-		    list: The list of missing frame numbers
+			list: The list of missing frame numbers
 
 		Args:
-		    format (bool, optional): Convenience for immediately returning a formatted
-		    	list of the missing frames. By default still returns the list, when True
-		    	returns a string with the pretty-printed list
+			format (bool, optional): Convenience for immediately returning a formatted
+				list of the missing frames. By default still returns the list, when True
+				returns a string with the pretty-printed list
 		"""
 		current = self.getFramesAsNumberList()
 		missing = []
@@ -162,14 +163,14 @@ class Sequence():
 		fooBar.$F4.exr (again for 4-digit padding)
 
 		Args:
-		    format (str, optional): The format of the wildcard for the frame number
-		    	replacement. By default uses the standard wildcard '#'
-		    includeDir (bool, optional): Whether the returned representative string
-		    	should be the full path to the file, or just the file name. By default,
-		    	only the file name is returned
+			format (str, optional): The format of the wildcard for the frame number
+				replacement. By default uses the standard wildcard '#'
+			includeDir (bool, optional): Whether the returned representative string
+				should be the full path to the file, or just the file name. By default,
+				only the file name is returned
 
 		Returns:
-		    str: The formatted string representing the whole sequence
+			str: The formatted string representing the whole sequence
 		"""
 		padding = self.getPadding()
 		framePadding = format * padding
@@ -183,6 +184,27 @@ class Sequence():
 			return os.path.join(self.getDir(), fileName)
 
 		return fileName
+
+	def __iter__(self):
+		return self
+
+	def next(self):
+		if self._index == len(self._frames):
+			raise StopIteration
+
+		frame = self._frames[self._index]
+		self._index += 1
+
+		return frame
+
+	def __next__(self):
+		if self._index == len(self._frames):
+			raise StopIteration
+
+		frame = self._frames[self._index]
+		self._index += 1
+
+		return frame
 
 	@staticmethod
 	def prettyPrintFrameList(frames):
@@ -245,16 +267,16 @@ class Frame():
 		'200'  --> (3, 200)
 
 		Args:
-		    framePadding (str): The frame padding portion of the file name
+			framePadding (str): The frame padding portion of the file name
 
 		Returns:
-		    tuple: A tuple with the number of digits of padding (0020 is 4 digit padding),
+			tuple: A tuple with the number of digits of padding (0020 is 4 digit padding),
 				and the integer value of the frame that the string represents
 
 		Raises:
-		    ValueError: In the case where we cannot determine the integer value of the
-		    	given frame padding, which means that the string passed is not of the
-		    	expected format of pure digits
+			ValueError: In the case where we cannot determine the integer value of the
+				given frame padding, which means that the string passed is not of the
+				expected format of pure digits
 		"""
 
 		try:
@@ -278,3 +300,5 @@ class Frame():
 
 	def __str__(self):
 		return 'Frame {} from: {} ({})'.format(self._number, self._prefix, self._ext)
+
+seq = Sequence('/Volumes/Macintosh MD/Users/spaouellet/Documents/houdini/toolTests/render', ext='png')
