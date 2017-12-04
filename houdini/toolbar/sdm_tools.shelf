@@ -6,14 +6,10 @@
  a single file. -->
 
   <toolshelf name="com.sashaouellet::sdm_tools" label="SDMTools">
-    <memberTool name="com.sashaouellet::savprefstostuhome::1.0.0"/>
-    <memberTool name="com.sashaouellet::multiflipbook::1.1.0"/>
     <memberTool name="com.sashaouellet::cleansubnet::1.0.0"/>
-    <memberTool name="com.sashaouellet::calculatemocaplocomotion::1.0.0-alpha"/>
     <memberTool name="com.sashaouellet::converttorat::1.0.0"/>
+    <memberTool name="com.sashaouellet::multiflipbook::1.1.0"/>
   </toolshelf>
-
-  <toolshelf name="com.sashaouellet::sdm_tools0" label="SDMTools"/>
 
   <shelfSetEdit name="shelf_set_td" fileLocation="C:/PROGRA~1/SIDEEF~1/HOUDIN~1.671/houdini/toolbar\ShelfDefinitions.shelf">
     <addMemberToolshelf name="com.sashaouellet::sdm_tools" inPosition="16"/>
