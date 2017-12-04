@@ -36,10 +36,10 @@ class PreferencesDialog(QDialog):
 
 		# Add all tools as enabled initially, except for sdm_tools which is the shelf file itself
 		for tool in allTools:
-			if tool == 'sdm_tools':
-				continue
-
 			toolName = os.path.splitext(os.path.split(tool)[1])[0]
+
+			if toolName == 'sdm_tools':
+				continue
 
 			self._addTool(toolName)
 
