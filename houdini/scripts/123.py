@@ -1,7 +1,9 @@
 import os, json
+import hdefereval
 
 import sdm.houdini
 from sdm.houdini.dialog import checkForUpdates
+from sdm.houdini.shelves import addShelf
 
 def checkUpdates():
 	settingsPath = os.path.join(sdm.houdini.folder, 'settings.json')
@@ -17,4 +19,5 @@ def checkUpdates():
 
 				checkForUpdates(silent=True)
 
-# checkUpdates()
+hdefereval.executeDeferred(checkUpdates)
+hdefereval.executeDeferred(addShelf)
