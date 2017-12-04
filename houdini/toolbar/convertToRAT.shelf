@@ -5,7 +5,7 @@
  Note, that two definitions of the same element are not allowed in
  a single file. -->
 
-  <tool name="com.sashaouellet::convertrat::1.0.0" label="Convert to RAT" icon="SHELF_ConvertToRAT">
+  <tool name="com.sashaouellet::converttorat::1.0.0" label="Convert to RAT" icon="SHELF_ConvertToRAT">
     <helpText><![CDATA[= Convert to RAT =
 
 """Converts all referenced image files to RAT format, with the option to scale down and/or limit to a specific resolution."""
