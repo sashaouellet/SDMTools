@@ -1,4 +1,8 @@
 {
-    "autoCheckUpdates": false,
-    "version": "v1.1.3"
+    "autoCheckUpdates": true,
+    "disabledTools": [
+        "savePrefsToStuhome",
+        "calculateMocapLocomotion"
+    ],
+    "version": "v1.1.4"
 }
