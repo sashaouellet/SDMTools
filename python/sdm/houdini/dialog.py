@@ -12,6 +12,7 @@ from PySide2.QtUiTools import QUiLoader
 import sdm.houdini
 from sdm.houdini.fileutils import SettingsFile, getLargerVersions, writeFileWithStructure, changeBaseDir, mergeDict
 from sdm.utils import splitByCamelCase
+from sdm.houdini.shelves import addShelf
 
 class PreferencesDialog(QDialog):
 	def __init__(self, settings):
@@ -25,12 +26,10 @@ class PreferencesDialog(QDialog):
 		loader = QUiLoader()
 		self.ui = loader.load(file)
 		self.ui.tools = {}
-		self.ui.madeChanges = False
 		self.settings = settings
 
 		self.ui.LBL_version.setText(self.settings.get('version', 'v1.0.0'))
 		self.ui.CHK_autoCheckUpdates.setChecked(self.settings.get('autoCheckUpdates', False))
-		self.ui.CHK_autoCheckUpdates.clicked.connect(self._handleCheck)
 
 		shelfToolsDir = os.path.join(sdm.houdini.folder, 'toolbar')
 		allTools = glob.glob(os.path.join(shelfToolsDir, '*.shelf'))
@@ -54,13 +53,9 @@ class PreferencesDialog(QDialog):
 
 		hou.session.dummy = self.ui # Keeps the dialog open
 
-	def _handleCheck(self):
-		self.ui.madeChanges = True
-
 	def _addTool(self, name):
 		chk = QCheckBox(' '.join([s.capitalize() for s in splitByCamelCase(name)]))
 		chk.setChecked(True)
-		chk.clicked.connect(self._handleCheck)
 
 		self.ui.LAY_tools.addWidget(chk)
 
@@ -142,7 +137,7 @@ class CheckForUpdatesDialog(QDialog):
 def about():
 	webbrowser.open('http://www.sashaouellet.com')
 
-def checkForUpdates():
+def checkForUpdates(silent=False):
 	settingsJsonPath = os.path.join(sdm.houdini.folder, 'settings.json')
 	currVer = 'v1.0.0'
 	autoCheckUpdates = False
@@ -253,7 +248,8 @@ def checkForUpdates():
 				hou.ui.displayMessage('Error loading version from selection. Please try again.', title='SDMTools Updates', severity=hou.severityType.Error)
 				return
 	else:
-		hou.ui.displayMessage('No updates available', title='SDMTools Updates')
+		if not silent:
+			hou.ui.displayMessage('No updates available', title='SDMTools Updates')
 
 def showPreferences():
 	settings = SettingsFile()
@@ -263,9 +259,7 @@ def showPreferences():
 	if dialog.ret == QDialog.Rejected:
 		return
 
-	if dialog.ui.madeChanges:
-		hou.ui.displayMessage('Changes made will only be reflected once you restart Houdini')
-
 	settings = dialog.getSettings()
 
 	settings.write()
+	addShelf()
