@@ -50,7 +50,3 @@ def convertToCamelCase(input, firstIsLowercase=False):
 			words[i] = words[i].title()
 
 	return ''.join(words)
-
-t = 'foo bar'
-
-print convertToCamelCase(t)
