@@ -18,9 +18,9 @@ def main(houdiniEnvPath):
 	    houdiniEnvPath (str): The absolute path where the user's houdini.env file resides
 	"""
 	# TODO - set PYTHONPATH as well
-	pathname = os.path.dirname(sys.argv[0])
+	pathname = os.path.dirname(sys.argv[1])
 	toolsLoc = os.path.abspath(pathname)
-	pythonLoc = os.path.join(os.path.abspath(os.path.dirname(pathname)), 'python')
+	pythonLoc = os.path.join(os.path.abspath(os.path.dirname(toolsLoc)), 'python')
 	hPathRegx = re.compile(r'HOUDINI_PATH\s*=\s*"*([\w\\\/;&-_\s]+)')
 	pyPathRegx = re.compile(r'PYTHONPATH\s*=\s*"*([\w\\\/;&-_\s]+)')
 	_, tmp = mkstemp()
