@@ -20,10 +20,12 @@ class SettingsFile():
 
 	def __init__(self):
 		self._settingsJsonPath = os.path.join(sdm.houdini.folder, 'settings.json')
-		settingsFile = open(self._settingsJsonPath, 'r+')
+		settingsFile = ''
 
 		if not os.path.exists(self._settingsJsonPath):
 			settingsFile = open(self._settingsJsonPath, 'w+')
+		else:
+			settingsFile = open(self._settingsJsonPath, 'r+')
 
 		try:
 			self._settings = json.loads(settingsFile.read())
