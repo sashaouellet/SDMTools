@@ -1,6 +1,6 @@
 import os, glob
 import hou
-import urllib2, json, zipfile, StringIO, uuid, shutil
+import urllib, json, zipfile, StringIO, uuid, shutil
 import webbrowser
 from datetime import datetime
 
@@ -155,11 +155,11 @@ def checkForUpdates(silent=False):
 	currVer = settingsJson.get('version', 'v1.0.0')
 	autoCheckUpdates = settingsJson.get('autoCheckUpdates', False)
 
-	releasesUrl = 'https://api.github.com/repos/sashaouellet/SDMTools/releases'
+	releasesUrl = 'http://api.github.com/repos/sashaouellet/SDMTools/releases'
 	allVersions = []
 
 	try:
-		response = urllib2.urlopen(releasesUrl)
+		response = urllib.urlopen(releasesUrl)
 		data = json.loads(response.read())
 
 		for release in data:
