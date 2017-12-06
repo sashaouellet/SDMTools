@@ -44,7 +44,7 @@ def applyDefaultShapesAndColors():
 	if os.path.exists(opCustomizePath):
 		with open(opCustomizePath, 'r+') as opCustomize:
 			for l in opCustomize:
-				l = l.strip():
+				l = l.strip()
 
 				if l:
 					hou.hscript(l)
