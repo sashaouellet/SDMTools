@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<menuDocument>
+	<menu>
+		<scriptItem id="saveShapeAndColor">
+			<label>Save as Default Shape and Color</label>
+			<insertAfter>opmenu.save_menu</insertAfter>
+			<scriptCode>
+<![CDATA[
+from sdm.houdini.node import saveNodeShapeAndColor
+
+node = kwargs.get("node")
+
+if node is not None:
+	saveNodeShapeAndColor(node)
+]]>
+			</scriptCode>
+		</scriptItem>
+	</menu>
+</menuDocument>

@@ -4,6 +4,7 @@ import hdefereval
 import sdm.houdini
 from sdm.houdini.dialog import checkForUpdates
 from sdm.houdini.shelves import addShelf
+from sdm.houdini.node import applyDefaultShapesAndColors
 
 def checkUpdates():
 	settingsPath = os.path.join(sdm.houdini.folder, 'settings.json')
@@ -21,3 +22,4 @@ def checkUpdates():
 
 hdefereval.executeDeferred(checkUpdates)
 hdefereval.executeDeferred(addShelf)
+hdefereval.executeDeferred(applyDefaultShapesAndColors)
