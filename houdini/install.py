@@ -29,12 +29,15 @@ def main(houdiniEnvPath):
 		replacedHPath = False
 		replacedPyPath = False
 
+		print('Reading houdini.env...')
+
 		for l in env:
 			hMatch = hPathRegx.match(l)
 			pyMatch = pyPathRegx.match(l)
 
 			# If the user has already defined HOUDINI_PATH, we just append ours
 			if hMatch:
+				print('Found HOUDINI_PATH, appending')
 				oldPath = hMatch.group(1)
 				newPath = '{};{}'.format(oldPath, toolsLoc)
 				pathParts = oldPath.split(';')
@@ -45,8 +48,10 @@ def main(houdiniEnvPath):
 
 				output.write('\nHOUDINI_PATH = "{};&"'.format(';'.join(pathParts).replace(';&', '')))
 				replacedHPath = True
+				print('Done appending to HOUDINI_PATH')
 			# Same for PYTHONPATH..
 			elif pyMatch:
+				print('Found PYTHONPATH, appending')
 				oldPath = pyMatch.group(1)
 				newPath = '{};{}'.format(oldPath, pythonLoc)
 				pathParts = oldPath.split(';')
@@ -57,22 +62,29 @@ def main(houdiniEnvPath):
 
 				output.write('\nPYTHONPATH = "{}"'.format(';'.join(pathParts).replace(';&', '')))
 				replacedPyPath = True
+				print('Done appending to PYTHONPATH')
 			else:
 				output.write(l)
 
 		# If we didn't find HOUDINI_PATH originally, we'll write it at the end
 		if not replacedHPath:
+			print('HOUDINI_PATH not found, adding')
 			output.write('\nHOUDINI_PATH = "{};&"'.format(toolsLoc))
+			print('Done')
 
 		# Same for PYTHONPATH..
 		if not replacedPyPath:
+			print('PYTHONPATH not found, adding')
 			output.write('\nPYTHONPATH = "{}"'.format(pythonLoc))
+			print('Done')
 
 		env.close()
 		output.close()
 
+	print('Prepping to save houdini.env...')
 	os.remove(houdiniEnvPath)
 	move(tmp, houdiniEnvPath)
+	print('Installation complete')
 
 def getHoudiniEnv(version):
 	system = platform.system()
@@ -98,21 +110,33 @@ def getHoudiniEnv(version):
 		raise RuntimeError('Unknown OS, cancelling installation')
 		sys.exit(1)
 
+	print('Starting installation for {}...'.format(system))
+	print('Looking for: {}'.format(envDir))
+
 	if not os.path.exists(envDir):
 		print('Could not find expected Houdini directory: {} (incorrect version specified?)\nManual installation is required'.format(envDir))
 		sys.exit(1)
 
+	print('Found directory')
+	print('Looking for houdini.env...')
+
 	if not os.path.exists(os.path.join(envDir, 'houdini.env')):
 		print('houdini.env does not exist at path: {}\nTry opening Houdini, closing it, and running this script again.'.format(envDir))
 		sys.exit(1)
+
+	print('Found houdini.env')
 
 	return os.path.join(envDir, 'houdini.env')
 
 parser = ArgumentParser(usage='python install.py <houdiniVersion>', description='Installs these tools to the Houdini environment by modifying HOUDINI_PATH and PYTHONPATH in the houdini.env file for the given Houdini version')
 
 parser.add_argument('houdiniVersion', help='The version of Houdini to install for. i.e.: 16.0')
+parser.add_argument('--env', action='store', dest='houdiniEnv', default=None, help='The location of the houdini.env file to modify')
 
 args = parser.parse_args()
-houdiniEnv = getHoudiniEnv(args.houdiniVersion)
+houdiniEnv = args.houdiniEnv
+
+if not houdiniEnv:
+	houdiniEnv = getHoudiniEnv(args.houdiniVersion)
 
 main(houdiniEnv)
