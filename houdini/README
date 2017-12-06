@@ -15,6 +15,10 @@ python install.py HOUDINI_VERSION
 
 (Note that HOUDINI_VERSION should be formatted like 16.0, or 16.0.557, etc.)
 
+If your installation does not find the proper houdini.env, you can manually specify the location with the --env flag like so:
+
+python install.py HOUDINI_VERSION --env path/to/houdiniEnv/houdini.env
+
 - This will properly update the given houdini.env with the correct environment variables to receive all configurations, shelves, HDAs, etc.
 
 - Restart Houdini
