@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shelfDocument>
+  <!-- This file contains definitions of shelves, toolbars, and tools.
+ It should not be hand-edited when it is being used by the application.
+ Note, that two definitions of the same element are not allowed in
+ a single file. -->
+
+  <tool name="com.sashaouellet::cacheandflipbook::1.0.0" label="Cache and Flipbook" icon="hicon:/SVGIcons.index?SOP_filecache.svg">
+    <script scriptType="python"><![CDATA[import os
+import hou
+
+from PySide2.QtCore import *
+from PySide2.QtGui import *
+from PySide2.QtWidgets import *
+from PySide2.QtUiTools import QUiLoader
+
+import sdm.houdini
+from sdm.houdini.fileutils import getRelativeToHip
+from sdm.houdini.node import getRopNode
+from sdm.houdini.camera import flipbook
+
+class CacheAndFlipbookDialog(QDialog):
+    def __init__(self, *args, **kwargs):
+        super(CacheAndFlipbookDialog, self).__init__(*args, **kwargs)
+    
+        uiPath = os.path.join(sdm.houdini.folder, 'ui', 'SHELF_cacheAndFlipbook.ui')
+    
+        file = QFile(uiPath)
+        file.open(QFile.ReadOnly)
+    
+        loader = QUiLoader()
+        self.ui = loader.load(file)
+
+        self.ui.LNE_flipOutput.setEnabled(False)
+        self.ui.BTN_flipOutput.setEnabled(False)
+        self.ui.CHK_useMplay.clicked.connect(self.handleMplayToggle)
+        self.ui.BTN_ropNode.clicked.connect(self.handleRopSelection)
+        self.ui.BTN_camNode.clicked.connect(self.handleCamSelection)
+        self.ui.BTN_flipOutput.clicked.connect(self.handleFlipOutputSelection)
+        self.ui.BTN_ok.clicked.connect(self.handleSubmit)
+        self.ui.BTN_cancel.clicked.connect(self.ui.reject)
+        
+        selected = hou.selectedNodes()
+        
+        if selected and getRopNode(selected[-1]):
+            self.ui.LNE_ropNode.setText(selected[-1].path())
+            
+        cams = sdm.houdini.camera.getCameras()
+        
+        if cams:
+            self.ui.LNE_camNode.setText(cams[0].path())
+         
+        self.ui.setStyleSheet(hou.qt.styleSheet())
+        self.ui.setWindowModality(Qt.NonModal)
+        
+    def handleMplayToggle(self):
+        self.ui.LNE_flipOutput.setEnabled(not self.ui.CHK_useMplay.isChecked())
+        self.ui.BTN_flipOutput.setEnabled(not self.ui.CHK_useMplay.isChecked())
+        
+    def handleRopSelection(self):
+        initial = hou.node(self.ui.LNE_ropNode.text())
+        node = hou.ui.selectNode(initial_node=initial)
+        
+        if node:
+            self.ui.LNE_ropNode.setText(node)
+        
+    def handleCamSelection(self):
+        initial = hou.node(self.ui.LNE_camNode.text())        
+        node = hou.ui.selectNode(initial_node=initial, node_type_filter=hou.nodeTypeFilter.ObjCamera)
+        
+        if node:
+            self.ui.LNE_camNode.setText(node)
+        
+    def handleFlipOutputSelection(self):
+        output = hou.ui.selectFile(start_directory=hou.expandString('$HIP'), title='Select Flipbook Output', collapse_sequences=True, file_type=hou.fileType.Image, pattern=None, default_value=None, chooser_mode=hou.fileChooserMode.Write)
+        
+        if output:
+            if '$F' not in output:
+                hou.ui.displayMessage('Please specify a file path with sequence notation (i.e: $F, $F4)', title='Invalid Output', severity=hou.severityType.Error)
+                self.handleFlipOutputSelection()
+            
+            self.ui.LNE_flipOutput.setText(getRelativeToHip(output))
+        
+    def handleSubmit(self):
+        ropNode = hou.node(self.ui.LNE_ropNode.text())
+        camNode = hou.node(self.ui.LNE_camNode.text())
+        output = self.ui.LNE_flipOutput.text()
+        useMplay = self.ui.CHK_useMplay.isChecked()
+        rop = getRopNode(ropNode)
+        
+        if not ropNode or not rop:
+            hou.ui.displayMessage('Invalid ROP specified (must be a ROP node, or execute one)', title='Invalid ROP', severity=hou.severityType.Error)
+            return
+            
+        if not camNode or camNode.type().name() != 'cam':
+            hou.ui.displayMessage('Invalid camera specified', title='Invalid Camera', severity=hou.severityType.Error)
+            return
+        
+        if not output and not useMplay:
+            hou.ui.displayMessage('Please specify either an output path for the flipbook, or check "Mplay"', title='Invalid Flipbook Location', severity=hou.severityType.Error)
+            return
+            
+        if '$F' not in output and not useMplay:
+            hou.ui.displayMessage('Please specify a file path with sequence notation (i.e: $F, $F4)', title='Invalid Output', severity=hou.severityType.Error)
+            return
+        
+        rop.render()
+        
+        if ropNode.type().name() == 'filecache':
+            ropNode.parm('loadfromdisk').set(1) # Set to load from disk
+            ropNode.parm('reload').pressButton()
+        else: # Must create file cache to load from
+            outputParm = ropNode.globParms('sopoutput filename')[0]
+            ropOut = outputParm.unexpandedString()
+            fcache = ropNode.parent().createNode('filecache')
+            
+            fcache.parm('file').set(getRelativeToHip(ropOut).replace('$OS', ropNode.name()))
+            fcache.parm('loadfromdisk').set(1)
+            fcache.parm('reload').pressButton()
+            fcache.setDisplayFlag(True)
+            fcache.setRenderFlag(True)
+            
+            posOther = ropNode.position()
+            offset = hou.Vector2(0, -1.5)
+            
+            fcache.setPosition(posOther + offset)         
+        
+        flipOut = output if not useMplay else None
+        
+        flipbook(camNode, output=flipOut)
+        hou.ui.displayMessage('Complete!', title='Cache and Flipbook Completion')
+        self.ui.close()
+
+def main():
+    dialog = CacheAndFlipbookDialog(parent=hou.qt.mainWindow())
+    
+    dialog.ui.show()
+    
+    hou.session.dummy = dialog.ui # Keeps the dialog open
+    
+main()]]></script>
+  </tool>
+</shelfDocument>

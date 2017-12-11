@@ -12,6 +12,35 @@ from shutil import move
 import hou
 import sdm.houdini
 
+def getRopNode(node):
+	"""Given a node, attempts to figure out
+	where the cache node (hou.RopNode) is located.
+
+	There are cases where this is just the given node
+	itself, but others (like the File Cache SOP, or
+	potentially an HDA) the ROP node may be a child
+	within the subnet. This convenience function will
+	return that child.
+
+	Args:
+	    node (hou.Node): The node to look for the ROP
+	    	node in (also tests if the node itself is a
+	    	ROP node)
+
+	Returns:
+	    hou.Node: The node (either the one given or
+	    	a child) that is a hou.RopNode. Returns
+	    	None if no ROP node is found
+	"""
+	if isinstance(node, hou.RopNode):
+		return node
+
+	for child in node.children():
+		if isinstance(child, hou.RopNode):
+			return child
+
+	return None
+
 def getNodeTypeCategory(node):
 	"""Convenience for calling hou.Node.type().category()
 
