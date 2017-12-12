@@ -10,7 +10,7 @@ from PySide2.QtWidgets import *
 from PySide2.QtUiTools import QUiLoader
 
 import sdm.houdini
-from sdm.houdini.fileutils import SettingsFile, getLargerVersions, writeFileWithStructure, changeBaseDir, mergeDict
+from sdm.houdini.fileutils import SettingsFile, getLargerVersions, writeFileWithStructure, changeBaseDir, mergeDict, ValidationType
 from sdm.utils import splitByCamelCase
 from sdm.houdini.shelves import addShelf
 
@@ -29,6 +29,7 @@ class PreferencesDialog(QDialog):
 		self.settings = settings
 
 		self.ui.LBL_version.setText(self.settings.get('version', 'v1.0.0'))
+		self.ui.LNE_email.setText(self.settings.get('notificationEmail', ''))
 		self.ui.CHK_autoCheckUpdates.setChecked(self.settings.get('autoCheckUpdates', False))
 
 		shelfToolsDir = os.path.join(sdm.houdini.folder, 'toolbar')
@@ -68,6 +69,7 @@ class PreferencesDialog(QDialog):
 				disabledTools.append(tool)
 
 		self.settings.set('disabledTools', disabledTools)
+		self.settings.set('notificationEmail', self.ui.LNE_email.text(), validation=ValidationType.EMAIL)
 		self.settings.set('autoCheckUpdates', self.ui.CHK_autoCheckUpdates.isChecked())
 
 		return self.settings

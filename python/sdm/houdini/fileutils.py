@@ -9,7 +9,11 @@ __date__ = 11/27/17
 import sdm.houdini
 import hou
 
-import os, json
+import os, json, re
+from enum import Enum
+
+class ValidationType(Enum):
+	EMAIL = 1
 
 class SettingsFile():
 	_settings = dict({
@@ -32,7 +36,7 @@ class SettingsFile():
 		except ValueError: # Empty, or bad JSON - use defaults
 			pass
 
-	def set(self, setting, value, overwrite=True):
+	def set(self, setting, value, overwrite=True, validation=None):
 		"""Given a setting to change and the new value, updates
 		the settings dictionary
 
@@ -43,10 +47,18 @@ class SettingsFile():
 		    	will be overwritten by the given value. If this is False,
 		    	existing settings will not be overwritten. Settings that
 		    	didn't exist previously are added regardless of this option
+		    validation (ValidationType, optional): The type of validation to
+		    	perform on the input. A ValueError is raised if value does not
+		    	pass this validation. By default, no validation occurs
 		"""
 		# Setting exists, but we aren't overwriting
 		if self._settings.get(setting) and not overwrite:
 			return
+
+		if validation:
+			if validation == ValidationType.EMAIL and not re.match(r'[^@]+@[^@]+\.[^@]+', value):
+				raise ValueError('Invalid email, could not update settings')
+				return
 
 		self._settings[setting] = value
 
@@ -54,15 +66,15 @@ class SettingsFile():
 		"""Given a setting, retrieves its value
 
 		Args:
-		    setting (str): The setting to get the value of
-		    default (any, optional): In the case that the given
-		    	setting does not exist, this will be returned
-		    	instead. By default, None will be returned in
-		    	the event that this does occur.
+			setting (str): The setting to get the value of
+			default (any, optional): In the case that the given
+				setting does not exist, this will be returned
+				instead. By default, None will be returned in
+				the event that this does occur.
 
 		Returns:
-		    any: The value of the setting, or the value of 'default'
-		    	if the setting does not exist
+			any: The value of the setting, or the value of 'default'
+				if the setting does not exist
 		"""
 		return self._settings.get(setting, default)
 
@@ -133,12 +145,12 @@ def changeBaseDir(path, newBaseDir):
 	changeBaseDir('foo/bar/path.txt', 'someOtherDir') --> 'someOtherDir/bar/path.txt'
 
 	Args:
-	    path (str): The path to change
-	    newBaseDir (str): The new directory to swap the root directory of the path
-	    	with
+		path (str): The path to change
+		newBaseDir (str): The new directory to swap the root directory of the path
+			with
 
 	Returns:
-	    str: The updated path, or the same initial path if newBaseDir is None
+		str: The updated path, or the same initial path if newBaseDir is None
 	"""
 	pathParts = path.split(os.path.sep)
 
@@ -154,10 +166,10 @@ def writeFileWithStructure(content, sourcePath, baseDir=None):
 	a ZIP directory.
 
 	Args:
-	    content (str): The content to write
-	    sourcePath (str): The original path this content came from
-	    baseDir (str, optional): The new base directory of the file
-	    	this content will be written to
+		content (str): The content to write
+		sourcePath (str): The original path this content came from
+		baseDir (str, optional): The new base directory of the file
+			this content will be written to
 	"""
 	path = changeBaseDir(sourcePath, baseDir)
 
@@ -177,12 +189,12 @@ def mergeDict(source, target):
 	copied over to the resulting dictionary.
 
 	Args:
-	    source (dict): The initial dictionary
-	    target (dict): The dictionary to merge into, with its values
-	    	prioritized over the source
+		source (dict): The initial dictionary
+		target (dict): The dictionary to merge into, with its values
+			prioritized over the source
 
 	Returns:
-	    dict: The merged dictionary
+		dict: The merged dictionary
 	"""
 	merged = source.copy()
 
@@ -191,55 +203,55 @@ def mergeDict(source, target):
 	return merged
 
 def isDescendant(file, root=None):
-    """Determines if the given file is a hierarchical descendant
-    of the given root directory
+	"""Determines if the given file is a hierarchical descendant
+	of the given root directory
 
-    Args:
-        file (str): The file path to check
-        root (str, optional): The root directory that serves as the parent
-        	for the descendant comparison. If None, root is assumed to be the HIP
-        	dir.
+	Args:
+		file (str): The file path to check
+		root (str, optional): The root directory that serves as the parent
+			for the descendant comparison. If None, root is assumed to be the HIP
+			dir.
 
-    Returns:
-        bool: True if 'file' is a descendant of 'root', meaning
-        	that file is (at some point) a subdirectory under 'root',
-        	otherwise False
-    """
-    if not root:
-    	root = hou.getenv('HIP')
+	Returns:
+		bool: True if 'file' is a descendant of 'root', meaning
+			that file is (at some point) a subdirectory under 'root',
+			otherwise False
+	"""
+	if not root:
+		root = hou.getenv('HIP')
 
-    return file.startswith(root)
+	return file.startswith(root)
 
 def getRelativeToHip(file):
-    """Converts the given file path to a path that uses the $HIP
-    environment var, if applicable. In other words, converts the file
-    path from absolute to relative to the value of $HIP.
+	"""Converts the given file path to a path that uses the $HIP
+	environment var, if applicable. In other words, converts the file
+	path from absolute to relative to the value of $HIP.
 
-    Args:
-        file (str): The file path to convert
+	Args:
+		file (str): The file path to convert
 
-    Returns:
-        str: The file path, relative to $HIP
-    """
-    hip = hou.getenv('HIP')
+	Returns:
+		str: The file path, relative to $HIP
+	"""
+	hip = hou.getenv('HIP')
 
-    return os.path.normpath(file.replace(hip, os.path.join('$HIP', '')))
+	return os.path.normpath(file.replace(hip, os.path.join('$HIP', '')))
 
 def getAllFileReferences():
-    """Gets all files referenced by any parameter in the scene, INCLUDING duplicate
-    references. As a result, this function compiles the full list of all referencing
-    parameters, as opposed to hou.fileReferences() which only returns 1 of potentially
-    many parameters that references a file.
-    """
-    refs = []
+	"""Gets all files referenced by any parameter in the scene, INCLUDING duplicate
+	references. As a result, this function compiles the full list of all referencing
+	parameters, as opposed to hou.fileReferences() which only returns 1 of potentially
+	many parameters that references a file.
+	"""
+	refs = []
 
-    for node in hou.node('/').allSubChildren():
-    	for parm in node.globParms('*'):
-    		template = parm.parmTemplate()
-    		if isinstance(template, hou.StringParmTemplate) and template.stringType() == hou.stringParmType.FileReference:
-    			val = parm.evalAsString()
+	for node in hou.node('/').allSubChildren():
+		for parm in node.globParms('*'):
+			template = parm.parmTemplate()
+			if isinstance(template, hou.StringParmTemplate) and template.stringType() == hou.stringParmType.FileReference:
+				val = parm.evalAsString()
 
-    			if val and os.path.isfile(val) and isDescendant(val):
-    				refs.append((parm, val))
+				if val and os.path.isfile(val) and isDescendant(val):
+					refs.append((parm, val))
 
-    return refs
+	return refs
