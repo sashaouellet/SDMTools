@@ -1,4 +1,4 @@
-import os, json, inspect
+import os, json
 import logging, logging.config
 from logging.handlers import RotatingFileHandler
 
@@ -6,35 +6,23 @@ from logging.handlers import RotatingFileHandler
 folder = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), 'houdini')
 logDir = os.path.join(folder, 'logs')
 
+# Setup logging
 if not os.path.exists(logDir):
 	os.makedirs(logDir)
 
 logHandler = RotatingFileHandler(os.path.join(logDir, 'sdm_tools.log'), maxBytes=10485760, backupCount=5, encoding='utf8')
 
-# Setup logging
-loggingConfig = os.path.join(folder, 'logging.json')
-
-if os.path.exists(loggingConfig):
-	with open(loggingConfig, 'rt') as f:
-		config = json.load(f)
-
-	logging.config.dictConfig(config)
-else:
-	logging.basicConfig(level=logging.DEBUG)
-
-def getLogger():
-	frm = inspect.stack()[1]
-	mod = inspect.getmodule(frm[0])
-
-	logger = logging.getLogger(mod.__name__)
+def getLogger(moduleName):
+	logger = logging.getLogger(moduleName)
 	formatter = logging.Formatter('%(asctime)s [%(levelname)s]: %(name)s:%(funcName)s: %(message)s', '%Y-%m-%d %H:%M:%S')
 
 	logHandler.setFormatter(formatter)
 	logger.addHandler(logHandler)
 
+	logger.propagate = False
+
 	return logger
 
-
-logger = getLogger()
+logger = getLogger(__name__)
 
 logger.debug('Init SDMTool Houdini library in folder: {}'.format(folder))
