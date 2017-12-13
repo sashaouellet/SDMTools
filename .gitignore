@@ -1,3 +1,5 @@
 houdini/otls/backup/*
 .DS_Store
 *.pyc
+houdini/logs/*
+houdini/OPcustomize
