@@ -1,8 +1,9 @@
 import os, glob
 import hou
-import urllib, json, zipfile, StringIO, uuid, shutil
+import urllib, json, zipfile, StringIO, uuid, shutil, base64
 import webbrowser
 from datetime import datetime
+import smtplib
 
 from PySide2.QtCore import *
 from PySide2.QtGui import *
@@ -15,8 +16,8 @@ from sdm.utils import splitByCamelCase
 from sdm.houdini.shelves import addShelf
 
 class PreferencesDialog(QDialog):
-	def __init__(self, settings):
-		QDialog.__init__(self)
+	def __init__(self, settings, parent=None):
+		QDialog.__init__(self, parent=parent)
 
 		uiPath = os.path.join(sdm.houdini.folder, 'ui', 'MENU_preferences.ui')
 
@@ -30,7 +31,13 @@ class PreferencesDialog(QDialog):
 
 		self.ui.LBL_version.setText(self.settings.get('version', 'v1.0.0'))
 		self.ui.LNE_email.setText(self.settings.get('notificationEmail', ''))
+		self.ui.LNE_password.setText(base64.b64decode(self.settings.get('notificationPassword', '')))
 		self.ui.CHK_autoCheckUpdates.setChecked(self.settings.get('autoCheckUpdates', False))
+
+		self.ui.LNE_password.setEchoMode(QLineEdit.Password)
+		self.ui.BTN_verifyLogin.clicked.connect(self._verifyLogin)
+		self.ui.BTN_ok.clicked.connect(self._save)
+		self.ui.BTN_cancel.clicked.connect(self.ui.reject)
 
 		shelfToolsDir = os.path.join(sdm.houdini.folder, 'toolbar')
 		allTools = glob.glob(os.path.join(shelfToolsDir, '*.shelf'))
@@ -49,10 +56,9 @@ class PreferencesDialog(QDialog):
 			self.ui.tools[tool].setChecked(False)
 
 		self.ui.setStyleSheet(hou.qt.styleSheet())
+		self.ui.setWindowModality(Qt.NonModal)
 
-		self.ret = self.ui.exec_()
-
-		hou.session.dummy = self.ui # Keeps the dialog open
+		self.ui.show()
 
 	def _addTool(self, name):
 		chk = QCheckBox(' '.join([s.capitalize() for s in splitByCamelCase(name)]))
@@ -70,9 +76,32 @@ class PreferencesDialog(QDialog):
 
 		self.settings.set('disabledTools', disabledTools)
 		self.settings.set('notificationEmail', self.ui.LNE_email.text(), validation=ValidationType.EMAIL)
+		self.settings.set('notificationPassword', base64.b64encode(self.ui.LNE_password.text()))
 		self.settings.set('autoCheckUpdates', self.ui.CHK_autoCheckUpdates.isChecked())
 
 		return self.settings
+
+	def _save(self):
+		self.getSettings().write()
+		addShelf()
+		self.ui.close()
+
+		hou.ui.displayMessage('Preferences have been saved', title='SDMTools Preferences')
+
+	def _verifyLogin(self):
+		server = smtplib.SMTP('smtp.gmail.com:587')
+		user = self.ui.LNE_email.text()
+		pw = self.ui.LNE_password.text()
+
+		server.starttls()
+
+		try:
+			server.login(user, pw)
+			hou.ui.displayMessage('Successfully authenticated!', title='Successful Authentication')
+			server.quit()
+		except smtplib.SMTPAuthenticationError:
+			hou.ui.displayMessage('Invalid login. Please check credentials. Also ensure that your account is not setup for 2-step authentication and that you have enabled access from 3rd party apps.', title='Authentication Error', severity=hou.severityType.Error)
+			server.quit()
 
 class CheckForUpdatesDialog(QDialog):
 	def __init__(self, newVersions, autoCheckUpdates):
@@ -103,7 +132,6 @@ class CheckForUpdatesDialog(QDialog):
 		self.ui.CHK_autoCheckUpdates.setChecked(autoCheckUpdates)
 
 		self.populateRows(newVersions)
-
 		self.ret = self.ui.exec_()
 
 		hou.session.dummy = self.ui # Keeps the dialog open
@@ -256,12 +284,5 @@ def checkForUpdates(silent=False):
 def showPreferences():
 	settings = SettingsFile()
 
-	dialog = PreferencesDialog(settings)
-
-	if dialog.ret == QDialog.Rejected:
-		return
-
-	settings = dialog.getSettings()
-
-	settings.write()
-	addShelf()
+	dialog = PreferencesDialog(settings, parent=hou.qt.mainWindow())
+	hou.session.dummy = dialog.ui # Keeps the dialog open
