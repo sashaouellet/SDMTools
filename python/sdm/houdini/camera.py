@@ -5,9 +5,14 @@ __version__ = 1.0.0
 __date__ = 12/07/17
 """
 
+import sdm.houdini
 import hou
 
-import os
+import os, logging
+
+logger = sdm.houdini.getLogger(__name__)
+
+print logger
 
 def getCameras():
 	"""Gets all cameras in the scene
@@ -27,16 +32,15 @@ def flipbook(camera, output=None, frameRange=None):
 	    frameRange (tuple, optional): A tuple representing the start frame, end frame, and frame
 	    	increment of the flipbook sequence
 	"""
+	logger.info('Flipbooking for node: {} at output: {} and frame range: {}'.format(camera, output, frameRange))
 
 	assert camera.type().name() == 'cam', 'Node is not a camera: {}'.format(camera.path())
-
-	if output:
-		output = os.path.split(output)[1]
 
 	sceneViewer = hou.ui.curDesktop().paneTabOfType(hou.paneTabType.SceneViewer)
 
 	if not sceneViewer:
 		hou.ui.displayMessage('Could not find Scene Viewer pane tab, please create it and try again', title='Flipbook Error', severity=hou.severityType.Error)
+		logger.warning('Unable to locate pane tab "SceneViewer" in current desktop')
 		return
 
 	frameStart = int(sceneViewer.flipbookSettings().frameRange()[0])
@@ -47,19 +51,29 @@ def flipbook(camera, output=None, frameRange=None):
 		frameStart = frameRange[0]
 		frameEnd = frameRange[1]
 		frameInc = 1 if len(frameRange) == 2 else frameRange[2]
+		logger.debug('Using specified frame range: {}-{} with increment: {}'.format(frameStart, frameEnd, frameInc))
+	else:
+		logger.debug('Using flipbook settings for frame range: {}-{} with increment: {}'.format(frameStart, frameEnd, frameInc))
 
 	viewport = [vp for vp in sceneViewer.viewports() if vp.type() == hou.geometryViewportType.Perspective][0]
 
 	if not viewport:
 		hou.ui.displayMessage('Could not find the "Persp" viewport', title='Flipbook Error', severity=hou.severityType.Error)
+		logger.warning('Unable to locate "Persp" viewport from scene viewer: {}'.format(sceneViewer))
 		return
 
 	viewportFullName = '{}.{}.world.{}'.format(hou.ui.curDesktop().name(), sceneViewer.name(), viewport.name())
+
+	logger.info('Preparing to flipbook for viewport: {}'.format(viewportFullName))
 
 	hou.setFrame(frameStart)
 	viewport.setCamera(camera)
 
 	if output:
-		hou.hscript("viewwrite -f {} {} -i {} {} '{}'".format(frameStart, frameEnd, frameInc, viewportFullName, output))
+		command = "viewwrite -f {} {} -i {} {} '{}'".format(frameStart, frameEnd, frameInc, viewportFullName, output)
 	else: # Use Mplay flag instead
-		hou.hscript("viewwrite -f {} {} -i {} -M {}".format(frameStart, frameEnd, frameInc, viewportFullName))
+		command = "viewwrite -M -f {} {} -i {} {}".format(frameStart, frameEnd, frameInc, viewportFullName)
+
+	logger.debug('Executing HScript: {}'.format(command))
+	hou.hscript(command)
+	logger.info('Done flipbooking')

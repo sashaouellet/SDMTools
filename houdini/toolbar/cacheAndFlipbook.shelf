@@ -21,6 +21,7 @@ from sdm.houdini.camera import flipbook
 
 class CacheAndFlipbookDialog(QDialog):
     def __init__(self, *args, **kwargs):
+        logger.debug('Loading dialog')
         super(CacheAndFlipbookDialog, self).__init__(*args, **kwargs)
     
         uiPath = os.path.join(sdm.houdini.folder, 'ui', 'SHELF_cacheAndFlipbook.ui')
@@ -88,33 +89,46 @@ class CacheAndFlipbookDialog(QDialog):
         useMplay = self.ui.CHK_useMplay.isChecked()
         rop = getRopNode(ropNode)
         
+        logger.info('Executing cache and flipbook with rop: {} ({}), cam: {}, output: {}, using MPlay: {}'.format(ropNode.path(), rop.path(), camNode.path(), output, useMplay))
+        
         if not ropNode or not rop:
             hou.ui.displayMessage('Invalid ROP specified (must be a ROP node, or execute one)', title='Invalid ROP', severity=hou.severityType.Error)
+            logger.warning('Invalid ROP: {} ({})'.format(ropNode.path(), rop.path()))
             return
             
         if not camNode or camNode.type().name() != 'cam':
             hou.ui.displayMessage('Invalid camera specified', title='Invalid Camera', severity=hou.severityType.Error)
+            logger.warning('Node: {} is not a camera'.format(camNode.path()))
             return
         
         if not output and not useMplay:
             hou.ui.displayMessage('Please specify either an output path for the flipbook, or check "Mplay"', title='Invalid Flipbook Location', severity=hou.severityType.Error)
+            logger.warning('No output specified when MPlay was unchecked')
             return
             
         if '$F' not in output and not useMplay:
             hou.ui.displayMessage('Please specify a file path with sequence notation (i.e: $F, $F4)', title='Invalid Output', severity=hou.severityType.Error)
+            logger.warning('$F token not found in output')
             return
         
+        logger.info('Executing cache..')
         rop.render()
+        logger.info('Cache completed')
         
         if ropNode.type().name() == 'filecache':
+            logger.debug('ROP was "filecache", loading cache from disk')
             ropNode.parm('loadfromdisk').set(1) # Set to load from disk
             ropNode.parm('reload').pressButton()
         else: # Must create file cache to load from
+            logger.debug('ROP not a file cache, creating one to load from disk')
             outputParm = ropNode.globParms('sopoutput filename')[0]
             ropOut = outputParm.unexpandedString()
             fcache = ropNode.parent().createNode('filecache')
+            output = getRelativeToHip(ropOut).replace('$OS', ropNode.name())
             
-            fcache.parm('file').set(getRelativeToHip(ropOut).replace('$OS', ropNode.name()))
+            logger.debug('Setting file path to: {}'.format(output))
+            
+            fcache.parm('file').set(output)
             fcache.parm('loadfromdisk').set(1)
             fcache.parm('reload').pressButton()
             fcache.setDisplayFlag(True)
@@ -127,8 +141,11 @@ class CacheAndFlipbookDialog(QDialog):
         
         flipOut = output if not useMplay else None
         
+        logger.info('Flipbooking to: {}'.format(flipOut if flipOut else 'MPlay'))
+        
         flipbook(camNode, output=flipOut)
         hou.ui.displayMessage('Complete!', title='Cache and Flipbook Completion')
+        logger.info('Closing dialog')
         self.ui.close()
 
 def main():
@@ -137,7 +154,8 @@ def main():
     dialog.ui.show()
     
     hou.session.dummy = dialog.ui # Keeps the dialog open
-    
+
+logger = sdm.houdini.getLogger('SHELF_cacheAndFlipbook')
 main()]]></script>
   </tool>
 </shelfDocument>
