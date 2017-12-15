@@ -10,9 +10,7 @@ import hou
 
 import os, logging
 
-logger = sdm.houdini.getLogger(__name__)
-
-print logger
+logger = logging.getLogger(__name__)
 
 def getCameras():
 	"""Gets all cameras in the scene

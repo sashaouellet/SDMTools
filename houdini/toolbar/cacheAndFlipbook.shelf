@@ -6,7 +6,7 @@
  a single file. -->
 
   <tool name="com.sashaouellet::cacheandflipbook::1.0.0" label="Cache and Flipbook" icon="hicon:/SVGIcons.index?SOP_filecache.svg">
-    <script scriptType="python"><![CDATA[import os
+    <script scriptType="python"><![CDATA[import os, logging
 import hou
 
 from PySide2.QtCore import *
@@ -155,7 +155,7 @@ def main():
     
     hou.session.dummy = dialog.ui # Keeps the dialog open
 
-logger = sdm.houdini.getLogger('SHELF_cacheAndFlipbook')
+logger = logging.getLogger('SHELF_cacheAndFlipbook')
 main()]]></script>
   </tool>
 </shelfDocument>

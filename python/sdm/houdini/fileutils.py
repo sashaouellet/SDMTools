@@ -9,8 +9,10 @@ __date__ = 11/27/17
 import sdm.houdini
 import hou
 
-import os, json, re
+import os, json, re, logging
 from enum import Enum
+
+logger = logging.getLogger(__name__)
 
 class ValidationType(Enum):
 	EMAIL = 1
@@ -23,17 +25,23 @@ class SettingsFile():
 		})
 
 	def __init__(self):
+		logger.info('Loading settings file')
 		self._settingsJsonPath = os.path.join(sdm.houdini.folder, 'settings.json')
 		settingsFile = ''
 
 		if not os.path.exists(self._settingsJsonPath):
+			logger.debug('settings.json doesn\'t exist, creating')
 			settingsFile = open(self._settingsJsonPath, 'w+')
 		else:
+			logger.debug('Found settings.json')
 			settingsFile = open(self._settingsJsonPath, 'r+')
 
 		try:
+			logger.info('Loading JSON from file')
 			self._settings = json.loads(settingsFile.read())
+			logger.info('Loaded: {}'.format(self._settings))
 		except ValueError: # Empty, or bad JSON - use defaults
+			logger.warning('JSON was empty or malformed, defaulting to: {}'.format(self._settings))
 			pass
 
 	def set(self, setting, value, overwrite=True, validation=None):
@@ -52,15 +60,20 @@ class SettingsFile():
 		    	pass this validation. By default, no validation occurs
 		"""
 		# Setting exists, but we aren't overwriting
+		logger.info('Setting {} to: {} (overwrite={}, validation={})'.format(setting, value, overwrite, validation.name()))
 		if self._settings.get(setting) and not overwrite:
+			logger.debug('Setting exists but overwrite is False - not updating')
 			return
 
 		if validation:
+			logger.info('Performing validation: {}'.format(validation.name()))
 			if validation == ValidationType.EMAIL and not re.match(r'[^@]+@[^@]+\.[^@]+', value):
+				logger.warning('Email: {} did not match email pattern'.format(value))
 				raise ValueError('Invalid email, could not update settings')
 				return
 
 		self._settings[setting] = value
+		logger.info('Value set')
 
 	def get(self, setting, default=None):
 		"""Given a setting, retrieves its value
@@ -76,14 +89,20 @@ class SettingsFile():
 			any: The value of the setting, or the value of 'default'
 				if the setting does not exist
 		"""
-		return self._settings.get(setting, default)
+		val = self._settings.get(setting, default)
+
+		logger.info('Got: {} for setting: {} (default={})'.format(val, setting, default))
+
+		return val
 
 	def write(self):
+		logger.info('Writing to {}'.format(self._settingsJsonPath))
 		settingsFile = open(self._settingsJsonPath, 'r+')
 
 		settingsFile.seek(0)
 		json.dump(self._settings, settingsFile, sort_keys=True, indent=4, separators=(',', ': '))
 		settingsFile.truncate()
+		logger.info('Done')
 
 def getLargerVersions(compareTo, otherVersions):
 	"""For all the given versions, returns a list of all those that are larger
