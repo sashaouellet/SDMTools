@@ -21,7 +21,6 @@ from sdm.houdini.camera import flipbook
 
 class CacheAndFlipbookDialog(QDialog):
     def __init__(self, *args, **kwargs):
-        logger.debug('Loading dialog')
         super(CacheAndFlipbookDialog, self).__init__(*args, **kwargs)
     
         uiPath = os.path.join(sdm.houdini.folder, 'ui', 'SHELF_cacheAndFlipbook.ui')
@@ -112,15 +111,23 @@ class CacheAndFlipbookDialog(QDialog):
             return
         
         logger.info('Executing cache..')
-        rop.render()
+        
+        if ropNode.type().name() == 'filecache':
+            # Try to use custom button in case we have notifications
+            button = ropNode.parm('executeWithNotification')
+            
+            if button:
+                button.pressButton()
+            else:
+                rop.render()
+        else: # Otherwise normal execution
+            rop.render()
         logger.info('Cache completed')
         
         if ropNode.type().name() == 'filecache':
-            logger.debug('ROP was "filecache", loading cache from disk')
             ropNode.parm('loadfromdisk').set(1) # Set to load from disk
             ropNode.parm('reload').pressButton()
         else: # Must create file cache to load from
-            logger.debug('ROP not a file cache, creating one to load from disk')
             outputParm = ropNode.globParms('sopoutput filename')[0]
             ropOut = outputParm.unexpandedString()
             fcache = ropNode.parent().createNode('filecache')
@@ -145,7 +152,6 @@ class CacheAndFlipbookDialog(QDialog):
         
         flipbook(camNode, output=flipOut)
         hou.ui.displayMessage('Complete!', title='Cache and Flipbook Completion')
-        logger.info('Closing dialog')
         self.ui.close()
 
 def main():
