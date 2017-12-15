@@ -91,18 +91,19 @@ class SettingsFile():
 		"""
 		val = self._settings.get(setting, default)
 
-		logger.info('Got: {} for setting: {} (default={})'.format(val, setting, default))
+		logger.debug('Got: {} for setting: {} (default={})'.format(val, setting, default))
 
 		return val
 
 	def write(self):
+		"""Writes the settings file out to the proper path of settings.json
+		"""
 		logger.info('Writing to {}'.format(self._settingsJsonPath))
 		settingsFile = open(self._settingsJsonPath, 'r+')
 
 		settingsFile.seek(0)
 		json.dump(self._settings, settingsFile, sort_keys=True, indent=4, separators=(',', ': '))
 		settingsFile.truncate()
-		logger.info('Done')
 
 def getLargerVersions(compareTo, otherVersions):
 	"""For all the given versions, returns a list of all those that are larger

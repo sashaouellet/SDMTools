@@ -6,11 +6,14 @@ __date__ = 12/10/17
 """
 
 from enum import Enum
+import logging
 import smtplib, base64
 from email.mime.text import MIMEText
 
 from sdm.houdini.fileutils import SettingsFile
 from sdm.utils import splitByCamelCase
+
+logger = logging.getLogger(__name__)
 
 class NotificationType(Enum):
 	ROP_COMPLETE = 1
@@ -31,6 +34,7 @@ def notifyUser(msg, data={}):
 	server = smtplib.SMTP('smtp.gmail.com:587')
 
 	if msg == NotificationType.ROP_COMPLETE:
+		logger.info('Notifying for ROP completion')
 		server.starttls()
 
 		settings = SettingsFile()
@@ -41,8 +45,10 @@ def notifyUser(msg, data={}):
 			message = MIMEText(formatMessage('Cache completed', data))
 			message['Subject'] = 'SDMTools - {} has completed'.format(data.get('Node', 'Cache'))
 
+			logger.debug('Authenticating user')
 			server.login(user, pw)
 			server.sendmail(user, user, message.as_string())
+			logger.debug('Sent email')
 			server.quit()
 
 
