@@ -1,4 +1,5 @@
 import os, glob
+import logging
 import hou
 import urllib, json, zipfile, StringIO, uuid, shutil, base64
 import webbrowser
@@ -14,6 +15,8 @@ import sdm.houdini
 from sdm.houdini.fileutils import SettingsFile, getLargerVersions, writeFileWithStructure, changeBaseDir, mergeDict, ValidationType
 from sdm.utils import splitByCamelCase
 from sdm.houdini.shelves import addShelf
+
+logger = logging.getLogger(__name__)
 
 class PreferencesDialog(QDialog):
 	def __init__(self, settings, parent=None):
@@ -96,12 +99,14 @@ class PreferencesDialog(QDialog):
 		server.starttls()
 
 		try:
+			logger.info('Authenticating user')
 			server.login(user, pw)
 			hou.ui.displayMessage('Successfully authenticated!', title='Successful Authentication')
 			server.quit()
 		except smtplib.SMTPAuthenticationError:
 			hou.ui.displayMessage('Invalid login. Please check credentials. Also ensure that your account is not setup for 2-step authentication and that you have enabled access from 3rd party apps.', title='Authentication Error', severity=hou.severityType.Error)
 			server.quit()
+			logger.warning('Error during authentication', exc_info=True)
 
 class CheckForUpdatesDialog(QDialog):
 	def __init__(self, newVersions, autoCheckUpdates):
@@ -168,27 +173,16 @@ def about():
 	webbrowser.open('http://www.sashaouellet.com')
 
 def checkForUpdates(silent=False):
-	settingsJsonPath = os.path.join(sdm.houdini.folder, 'settings.json')
-	currVer = 'v1.0.0'
-	autoCheckUpdates = False
-	settingsJson = {}
-	settingsFile = open(settingsJsonPath, 'r+')
+	settings = SettingsFile()
 
-	if not os.path.exists(settingsJsonPath):
-		settingsFile = open(settingsJsonPath, 'w+')
-
-	try:
-		settingsJson = json.loads(settingsFile.read())
-	except ValueError:
-		pass
-
-	currVer = settingsJson.get('version', 'v1.0.0')
-	autoCheckUpdates = settingsJson.get('autoCheckUpdates', False)
+	currVer = settings.get('version', 'v1.0.0')
+	autoCheckUpdates = settings.get('autoCheckUpdates', False)
 
 	releasesUrl = 'http://api.github.com/repos/sashaouellet/SDMTools/releases'
 	allVersions = []
 
 	try:
+		logger.info('Retrieving all releases')
 		response = urllib.urlopen(releasesUrl)
 		data = json.loads(response.read())
 
@@ -196,19 +190,19 @@ def checkForUpdates(silent=False):
 			allVersions.append(release)
 	except urllib2.URLError, e:
 		hou.ui.displayMessage('Error when retrieving new versions: {}'.format(e), title='SDMTools Updates', severity=hou.severityType.Error)
+		logger.warning('Error in retrieval', exc_info=True)
 		return
 
 	newVersions = getLargerVersions(currVer, allVersions)
+
+	logger.debug('Newer versions found: {}'.format(newVersions))
 
 	if len(newVersions) > 0: # Prompt user for new versions
 		dialog = CheckForUpdatesDialog(newVersions, autoCheckUpdates)
 
 		if dialog.ret == QDialog.Rejected:
-			settingsJson['autoCheckUpdates'] = dialog.ui.CHK_autoCheckUpdates.isChecked()
-
-			settingsFile.seek(0)
-			json.dump(settingsJson, settingsFile, sort_keys=True, indent=4, separators=(',', ': '))
-			settingsFile.truncate()
+			settings.set('autoCheckUpdates', dialog.ui.CHK_autoCheckUpdates.isChecked())
+			settings.write()
 
 			return
 
@@ -229,6 +223,8 @@ def checkForUpdates(silent=False):
 					break
 
 			if version:
+				logger.info('Installing {}'.format(selectedTag))
+
 				targetDir =  os.path.join(os.path.split(os.path.dirname(sdmtools.folder))[0], 'temp_{}'.format(uuid.uuid4())) # temp SDMTools base directory - to rename after deleting old one
 				oldSettings = '{}'
 
@@ -238,6 +234,7 @@ def checkForUpdates(silent=False):
 							oldSettings = json.load(open(os.path.join(dirpath, f)))
 
 				try:
+					logger.info('Obtaining zipball from {}'.format(version['zipball_url']))
 					response = urllib2.urlopen(version['zipball_url'])
 					s = StringIO.StringIO()
 
@@ -249,6 +246,8 @@ def checkForUpdates(silent=False):
 						for file in zip.namelist():
 							fileName = os.path.split(file)[1]
 
+							logger.debug('Installing {}'.format(fileName))
+
 							if fileName != 'settings.json': # Don't want to override this
 								writeFileWithStructure(zip.read(file), file, baseDir=targetDir)
 							else:
@@ -256,8 +255,10 @@ def checkForUpdates(silent=False):
 								overwriteSettings = settingsData.get('forceOverwrite', False)
 
 								if overwriteSettings:
+									logger.debug('Forced overwrite of settings.json')
 									writeFileWithStructure(zip.read(file), file, baseDir=targetDir)
 								else: # Line by line merge
+									logger.debug('Merging new settings with existing')
 									targetSettings = open(changeBaseDir(file, targetDir), 'w+')
 									mergedJson = mergeDict(json.load(zip.open(file)), oldSettings)
 									mergedJson['version'] = version['tag_name']
@@ -270,14 +271,18 @@ def checkForUpdates(silent=False):
 					os.rename(targetDir, oldFolder)
 
 					hou.ui.displayMessage('Successfully installed {}!'.format(version['tag_name']), title='SDMTools updates')
+					logger.info('Finished installation')
 
 				except urllib2.URLError, e:
 					hou.ui.displayMessage('Error when downloading new version: {}'.format(e), title='SDMTools Updates', severity=hou.severityType.Error)
+					logger.warning('Error retrieving zipball', exc_info=True)
 					return
 			else:
 				hou.ui.displayMessage('Error loading version from selection. Please try again.', title='SDMTools Updates', severity=hou.severityType.Error)
+				logger.warning('Could not get version based on selected tag: {}'.format(selectedTag))
 				return
 	else:
+		logger.debug('No new updates')
 		if not silent:
 			hou.ui.displayMessage('No updates available', title='SDMTools Updates')
 
