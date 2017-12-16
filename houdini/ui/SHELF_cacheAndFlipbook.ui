@@ -31,7 +31,7 @@
    <item row="5" column="0" colspan="7">
     <widget class="QCheckBox" name="CHK_moveCam">
      <property name="enabled">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
      <property name="toolTip">
       <string>If checked, moves the selected camera so that the last frame in the cache is fully visible in frame</string>

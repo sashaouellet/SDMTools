@@ -17,7 +17,7 @@ from PySide2.QtUiTools import QUiLoader
 import sdm.houdini
 from sdm.houdini.fileutils import getRelativeToHip
 from sdm.houdini.node import getRopNode
-from sdm.houdini.camera import flipbook
+from sdm.houdini.camera import flipbook, getCurrentViewport
 
 class CacheAndFlipbookDialog(QDialog):
     def __init__(self, *args, **kwargs):
@@ -39,6 +39,8 @@ class CacheAndFlipbookDialog(QDialog):
         self.ui.BTN_flipOutput.clicked.connect(self.handleFlipOutputSelection)
         self.ui.BTN_ok.clicked.connect(self.handleSubmit)
         self.ui.BTN_cancel.clicked.connect(self.ui.reject)
+        
+        self.isCooking = False
         
         selected = hou.selectedNodes()
         
@@ -80,6 +82,12 @@ class CacheAndFlipbookDialog(QDialog):
                 self.handleFlipOutputSelection()
             
             self.ui.LNE_flipOutput.setText(getRelativeToHip(output))
+            
+    def doneCooking(self):
+        return not self.isCooking
+    
+    def cookComplete(self):
+        self.isCooking = False
         
     def handleSubmit(self):
         ropNode = hou.node(self.ui.LNE_ropNode.text())
@@ -88,7 +96,7 @@ class CacheAndFlipbookDialog(QDialog):
         useMplay = self.ui.CHK_useMplay.isChecked()
         rop = getRopNode(ropNode)
         
-        logger.info('Executing cache and flipbook with rop: {} ({}), cam: {}, output: {}, using MPlay: {}'.format(ropNode.path(), rop.path(), camNode.path(), output, useMplay))
+        logger.info('Executing cache and flipbook with rop: {} ({}), cam: {}, output: {}, using MPlay: {}'.format(ropNode, rop, camNode, output, useMplay))
         
         if not ropNode or not rop:
             hou.ui.displayMessage('Invalid ROP specified (must be a ROP node, or execute one)', title='Invalid ROP', severity=hou.severityType.Error)
@@ -122,6 +130,7 @@ class CacheAndFlipbookDialog(QDialog):
                 rop.render()
         else: # Otherwise normal execution
             rop.render()
+        
         logger.info('Cache completed')
         
         if ropNode.type().name() == 'filecache':
@@ -144,7 +153,24 @@ class CacheAndFlipbookDialog(QDialog):
             posOther = ropNode.position()
             offset = hou.Vector2(0, -1.5)
             
-            fcache.setPosition(posOther + offset)         
+            fcache.setPosition(posOther + offset)
+        
+        if self.ui.CHK_moveCam.isChecked(): # Prepare to move camera
+            logger.debug('Moving camera to bbox')
+            
+            hou.setFrame(ropNode.parm('f2').eval()) # set to last frame
+            
+            self.isCooking = True
+            
+            hou.ui.addEventLoopCallback(self.cookComplete)
+            hou.ui.waitUntil(self.doneCooking) # Because jumping to the last frame causes a cook to occur (due to file readback)
+            
+            viewport = getCurrentViewport(hou.geometryViewportType.Perspective)
+            
+            viewport.setCamera(camNode) # Look through camera first otherwise it doesn't frame properly
+            ropNode.setSelected(True)
+            viewport.frameSelected()
+            viewport.saveViewToCamera(camNode)
         
         flipOut = output if not useMplay else None
         
