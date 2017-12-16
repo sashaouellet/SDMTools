@@ -35,6 +35,9 @@ def getRopNode(node):
 	if isinstance(node, hou.RopNode):
 		return node
 
+	if not node:
+		return None
+
 	for child in node.children():
 		if isinstance(child, hou.RopNode):
 			return child
