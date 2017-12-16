@@ -58,7 +58,7 @@ class PreferencesDialog(QDialog):
 			self.ui.tools[tool].setChecked(False)
 
 		self.ui.setStyleSheet(hou.qt.styleSheet())
-		self.ui.setWindowModality(Qt.NonModal)
+		self.ui.setWindowModality(Qt.ApplicationModal)
 
 		self.ui.show()
 
