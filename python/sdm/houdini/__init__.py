@@ -22,4 +22,5 @@ else:
 
 logger = logging.getLogger(__name__)
 
+logger.info('Houdini version: {}'.format(hou.applicationVersionString()))
 logger.info('Init SDMTool Houdini library in folder: {}'.format(folder))
