@@ -176,7 +176,7 @@ class CacheAndFlipbookDialog(QDialog):
         
         logger.info('Flipbooking to: {}'.format(flipOut if flipOut else 'MPlay'))
         
-        flipbook(camNode, output=flipOut)
+        flipbook(camNode, output=flipOut, frameRange=ropNode.parmTuple('f').eval())
         hou.ui.displayMessage('Complete!', title='Cache and Flipbook Completion')
         self.ui.close()
 
