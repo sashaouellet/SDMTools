@@ -87,13 +87,23 @@ checkForUpdates()
 				</scriptCode>
 			</scriptItem>
 			<separatorItem id="sdmTools_menu_sep_1"/>
+			<scriptItem id="bugReport">
+				<label>Report a Bug/Feature Request</label>
+				<scriptCode>
+<![CDATA[
+import webbrowser
+
+webbrowser.open('https://github.com/sashaouellet/SDMTools/issues?state=open')
+]]>
+				</scriptCode>
+			</scriptItem>
 			<scriptItem id="about">
 				<label>About SDMTools</label>
 				<scriptCode>
 <![CDATA[
-from sdm.houdini.dialog import about
+import webbrowser
 
-about()
+webbrowser.open('https://github.com/sashaouellet/SDMTools')
 ]]>
 				</scriptCode>
 			</scriptItem>

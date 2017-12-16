@@ -2,7 +2,6 @@ import os, glob
 import logging
 import hou
 import urllib, json, zipfile, StringIO, uuid, shutil, base64
-import webbrowser
 from datetime import datetime
 import smtplib
 
@@ -168,9 +167,6 @@ class CheckForUpdatesDialog(QDialog):
 				item.setFlags(flags)
 
 				self.ui.TBL_versions.setItem(r, c, item)
-
-def about():
-	webbrowser.open('http://www.sashaouellet.com')
 
 def checkForUpdates(silent=False):
 	settings = SettingsFile()
