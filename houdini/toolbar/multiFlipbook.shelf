@@ -8,7 +8,9 @@
   <tool name="com.sashaouellet::multiflipbook::1.1.0" label="Multi Flipbook" icon="hicon:/SVGIcons.index?BUTTONS_capture.svg">
     <helpText><![CDATA[= Multi Flipbook =
 
-"""Allows for flipbooking from multiple cameras simultaneously"""
+#icon: BUTTONS/capture
+
+"""Flipbooks from one or more cameras simultaneously."""
 
 Select all the cameras you want to flipbook from as well as the frame range and frame increment for the flipbook. Then select the file location to save to, making sure to include the $F syntax (or $F3, etc). The viewport will then be exported to these files with the camera name prefixed to the chosen file name.
 

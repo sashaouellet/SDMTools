@@ -6,6 +6,11 @@
  a single file. -->
 
   <tool name="com.sashaouellet::cacheandflipbook::1.0.0" label="Cache and Flipbook" icon="hicon:/SVGIcons.index?SOP_filecache.svg">
+    <helpText><![CDATA[= Cache and Flipbook =
+
+#icon: SOP/filecache
+
+"""Caches the provided ROP and then automatically flipbooks the result."""]]></helpText>
     <script scriptType="python"><![CDATA[import os, logging
 import hou
 

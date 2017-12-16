@@ -8,6 +8,8 @@
   <tool name="com.sashaouellet::converttorat::1.0.0" label="Convert to RAT" icon="SHELF_ConvertToRAT">
     <helpText><![CDATA[= Convert to RAT =
 
+#icon: Icons/SHELF_ConvertToRAT
+
 """Converts all referenced image files to RAT format, with the option to scale down and/or limit to a specific resolution."""
 
 The default settings for this tool do not perform any scaling on the found images. First, Global Scale is calculated on all the images. Any images that still exceed the resolution set in "Max Resolution" will be further scaled down. By default, "None" means there is no max resolution. Choose "Custom" if you would like to specify a resolution other than the options provided.

@@ -8,7 +8,7 @@
   <tool name="com.sashaouellet::cleansubnet::1.0.0" label="Clean Subnet" icon="hicon:/SVGIcons.index?BUTTONS_clear.svg">
     <helpText><![CDATA[= Clean Subnet =
 
-"""Removes the entire tree structure from selected nodes of a subnet"""
+"""Removes the entire tree structure from selected nodes of a subnet."""
 
 This is a convienence tool for cleaning up large FBX's. Note that the selection is the node trees you want to delete.
 
