@@ -5,8 +5,8 @@ An integrated toolset for Houdini, and hopefully other 3D packages in the future
 
 - http://www.sashaouellet.com
 
-Download the **latest version** here (pick the top most one):
-https://github.com/sashaouellet/SDMTools/releases
+Download the **latest version** here:
+https://github.com/sashaouellet/SDMTools/releases/latest
 
 
 ### About
@@ -48,7 +48,7 @@ The installation process involves two steps: **downloading** and
 
 #### 1. Download
 
-Download latest release from [here](https://github.com/sashaouellet/SDMTools/releases) (use the top most release on the page). Unzip and place the SDMTools directory anywhere on your computer (or network drive if more convenient).
+Download latest release from [here](https://github.com/sashaouellet/SDMTools/releases/latest). Unzip and place the SDMTools directory anywhere on your computer (or network drive if more convenient).
 
 #### 2. Adding it to the Houdini environment
 
