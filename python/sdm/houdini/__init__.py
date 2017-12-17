@@ -1,3 +1,4 @@
+import hou
 import os, json
 import logging, logging.config
 
