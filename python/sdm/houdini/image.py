@@ -11,7 +11,7 @@ import os
 import imghdr
 import subprocess
 
-ALTERNATE_IMAGE_EXTS = ['.hdr']
+ALTERNATE_IMAGE_EXTS = ['.hdr', '.rat']
 
 def convertImageToRAT(file, maxDim, scale):
 	"""Converts the given absolute file path to RAT, using the icp command from $HFS/bin
