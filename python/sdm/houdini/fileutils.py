@@ -60,7 +60,7 @@ class SettingsFile():
 		    	pass this validation. By default, no validation occurs
 		"""
 		# Setting exists, but we aren't overwriting
-		logger.info('Setting {} to: {} (overwrite={}, validation={})'.format(setting, value, overwrite, validation.name()))
+		logger.info('Setting {} to: {} (overwrite={}, validation={})'.format(setting, value, overwrite, validation))
 		if self._settings.get(setting) and not overwrite:
 			logger.debug('Setting exists but overwrite is False - not updating')
 			return
