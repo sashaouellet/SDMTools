@@ -66,7 +66,7 @@ class SettingsFile():
 			return
 
 		if validation:
-			logger.info('Performing validation: {}'.format(validation.name()))
+			logger.info('Performing validation: {}'.format(validation))
 			if validation == ValidationType.EMAIL and not re.match(r'[^@]+@[^@]+\.[^@]+', value):
 				logger.warning('Email: {} did not match email pattern'.format(value))
 				raise ValueError('Invalid email, could not update settings')
