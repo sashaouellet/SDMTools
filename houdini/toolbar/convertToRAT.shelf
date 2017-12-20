@@ -17,7 +17,7 @@ The default settings for this tool do not perform any scaling on the found image
 Created by [Sasha Ouellet|http://www.sashaouellet.com]]]></helpText>
     <script scriptType="python"><![CDATA[import os
 import sdm.houdini
-from sdm.houdini.image import convertImageToRAT, isImage
+from sdm.houdini.image import convertImage, isImage, ImageType
 from sdm.houdini.fileutils import isDescendant, getRelativeToHip, getAllFileReferences
 
 from PySide2.QtCore import *
@@ -86,7 +86,7 @@ def main():
 
     with hou.InterruptableOperation('Converting images to RAT...') as operation:
         for f in refs:
-            newPath = convertImageToRAT(f, maxDim, scale)
+            newPath = convertImage(f, maxDim, scale, ImageType.RAT)
             conversions[f] = getRelativeToHip(newPath)
 
     for parm, ref in allRefs:

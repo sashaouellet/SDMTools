@@ -11,22 +11,33 @@ import os
 import imghdr
 import subprocess
 
-ALTERNATE_IMAGE_EXTS = ['.hdr', '.rat']
+from enum import Enum
 
-def convertImageToRAT(file, maxDim, scale):
-	"""Converts the given absolute file path to RAT, using the icp command from $HFS/bin
+class ImageType(Enum):
+	EXR = '.exr'
+	RAT = '.rat'
+	HDR = '.hdr'
+	JPG = '.jpg'
+	PNG = '.png'
+	TIFF = '.tiff'
+
+ALTERNATE_IMAGE_EXTS = [ImageType.RAT.value, ImageType.HDR.value]
+
+def convertImage(file, maxDim, scale, ext):
+	"""Converts the given absolute file path to the given extension, using the icp command from $HFS/bin
 
 	Args:
 	    file (str): The absolute file path of the image to convert. The converted image will
-	    	have the same path/filename, but with a .rat extension instead
+	    	have the same path/filename, but with the given extension instead
 	    maxDim (float): The maximimum dimension of either side of the outputted image. If the
 	    	image (after scaling) still does not meet this dimension, it will be further scaled
 	    	down
 	    scale (float): The initial scale factor to apply to the outputted image. The final calculated
 	    	scale gets passed to icp with the -s flag
+	    ext (sdm.houdini.image.ImageType): The image type to convert to
 
 	Returns:
-        str: The path to the outputted .rat file
+        str: The path to the outputted file
 	"""
 	args = [os.path.join(hou.getenv('HFS'), 'bin', 'icp')]
 	scale /= 100.0
@@ -48,7 +59,7 @@ def convertImageToRAT(file, maxDim, scale):
 	args.append('-s')
 	args.append(str(float(scale * 100)))
 
-	newPath = '{}.rat'.format(os.path.splitext(file)[0])
+	newPath = os.path.splitext(file)[0] + ext.value
 
 	args.append(file)
 	args.append(newPath)
