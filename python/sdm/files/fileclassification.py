@@ -175,8 +175,8 @@ class Sequence():
 		padding = self.getPadding()
 		framePadding = format * padding
 
-		if format == '$F':
-			framePadding = '$F{}'.format(padding) if padding > 1 else '$F'
+		if format == HOUDINI_FRAME_FORMAT:
+			framePadding = HOUDINI_FRAME_FORMAT + padding if padding > 1 else HOUDINI_FRAME_FORMAT
 
 		fileName = '{}.{}.{}'.format(self.getPrefix(), framePadding, self.getExt())
 
@@ -208,6 +208,19 @@ class Sequence():
 
 	@staticmethod
 	def prettyPrintFrameList(frames):
+		"""Given a list of frames (represented as their
+		integers), builds a string representing the combination
+		of discrete frames and frame ranges.
+
+		i.e. a list [1, 2, 3, 4, 5, 9, 10, 13, 15] would be formatted
+		as: '1-5, 9-10, 13, 15'
+
+		Args:
+		    frames (list): The frame list to format
+
+		Returns:
+		    str: The formmated frame list
+		"""
 		parts = []
 		currRangeStart = None
 		last = None
@@ -243,6 +256,56 @@ class Sequence():
 			parts.append('{}-{}'.format(currRangeStart, last))
 
 		return ', '.join(parts)
+
+	@staticmethod
+	def parseFrameString(frameString):
+		"""Given a string representing a sequence of discrete frames and
+		ranges of frames, compiles the complete list of the frames.
+
+		i.e. the string '1-3, 5, 9, 10-20:2' will produce [1, 2, 3, 5, 9,
+		10, 12, 14, 16, 18, 20]
+
+		Args:
+		    frameString (str): The string representing the sequence of discrete
+		    	and ranges of frames
+
+		Returns:
+		    list: The complete expanded list of the frames compiled from the frame string
+
+		Raises:
+		    ValueError: When one of the sequences contains a match, but does not properly match for
+		    	the start of the range. Should never occur.
+		"""
+		blocks = frameString.split(',')
+		blockRegex = re.compile(r'(?P<start>\-?\d+)(\-(?P<end>\-?\d+))?(:(?P<inc>\d+))?')
+		frameList = []
+
+		for block in blocks:
+			block = block.strip()
+			match = blockRegex.match(block)
+
+			if match:
+				start = match.group('start')
+				end = match.group('end')
+				end = end if end else start
+				inc = match.group('inc')
+				inc = inc if inc else 1
+
+				if not start: # not even a single frame number present
+					raise ValueError('Error in frame string. Invalid block: {} (expected at least 1 frame number)'.format(block))
+					return None
+
+				if end:
+					assert int(end) >= int(start), 'End frame in range cannot be smaller than start frame (Block: {})'.format(block)
+
+				for i in range(int(start), int(end) + 1, int(inc)):
+					frameList.append(i)
+
+		frameList = list(set(frameList))
+
+		frameList.sort()
+
+		return frameList
 
 class Frame():
 	_prefix = ''
@@ -300,5 +363,3 @@ class Frame():
 
 	def __str__(self):
 		return 'Frame {} from: {} ({})'.format(self._number, self._prefix, self._ext)
-
-seq = Sequence('/Volumes/Macintosh MD/Users/spaouellet/Documents/houdini/toolTests/render', ext='png')
