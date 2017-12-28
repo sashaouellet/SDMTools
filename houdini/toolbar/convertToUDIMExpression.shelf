@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shelfDocument>
+  <!-- This file contains definitions of shelves, toolbars, and tools.
+ It should not be hand-edited when it is being used by the application.
+ Note, that two definitions of the same element are not allowed in
+ a single file. -->
+
+  <tool name="com.sashaouellet::converttoudimexpression::1.0.0" label="Convert to UDIM Expression" icon="hicon:/SVGIcons.index?COP2_uvmap.svg">
+    <helpText><![CDATA[= Convert to UDIM Expression =
+
+#icon: COP2/uvmap
+
+"""Converts $F notation in the current matnet's texture nodes to '%(UDIM)d'"""
+
+Begin by either selecting the matnet you want to convert, or execute while inside the matnet. All texture nodes will have their 'map' parameter checked for the $F notation, and then switched to the UDIM expression accordingly.
+
+Created by [Sasha Ouellet|http://www.sashaouellet.com]]]></helpText>
+    <script scriptType="python"><![CDATA[import re
+from sdm.houdini.properties import getMainParm
+
+UDIM_STRING = '%(UDIM)d'
+
+def main():
+    matnet = [n for n in hou.selectedNodes() if n.type().name() == 'matnet']
+    
+    if not matnet:
+        netEditor = None
+        
+        for paneTab in hou.ui.currentPaneTabs():
+            if isinstance(paneTab, hou.NetworkEditor):
+                netEditor = paneTab
+                break
+        
+        matnet = netEditor.pwd() if netEditor.pwd().type().name() == 'matnet' else None
+        
+        if not matnet:
+            hou.ui.displayMessage('Please select a matnet to convert', title='Select a Matnet', severity=hou.severityType.Error)
+            return
+    else:
+        matnet = matnet[0]
+
+    textureNodes = [n for n in matnet.children() if n.type().name().startswith('texture')]
+    
+    for textureNode in textureNodes:
+        parm = textureNode.parm('map')
+        
+        if parm and parm.unexpandedString():
+            parm = getMainParm(textureNode, 'map')
+            regx = re.compile(r'(.*)(\$F[0-9]?)(.*)')
+            val = regx.sub(r'\1{}\3'.format(UDIM_STRING), parm.unexpandedString())
+            
+            parm.set(val)
+                    
+main()]]></script>
+  </tool>
+</shelfDocument>

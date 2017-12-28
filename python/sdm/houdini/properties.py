@@ -75,3 +75,35 @@ def initRopNotificationProperty(node):
 			parmTemplate.insertAfter('renderdialog', notifyParm)
 
 	node.setParmTemplateGroup(parmTemplate)
+
+
+def getMainParm(node, parm):
+	"""Given a node and a name of a parameter on the node,
+	returns the parameter at the end of any potential reference
+	chains.
+
+	Args:
+	    node (hou.Node): The node to search for the parameter on
+	    parm (str): The name of the parameter on the given node to
+	    	find the final referenced parameter of
+
+	Returns:
+	    hou.Parm: The final parm in the chain of referenced parms
+
+	Raises:
+	    ValueError: When the given node is not of type hou.Node
+	"""
+	parm = node.parm(parm)
+
+	assert isinstance(node, hou.Node), 'Must specify a node (hou.Node)'
+
+	if not parm:
+		raise ValueError('Specified parm: {} is not present on given node {}'.format(parm, node))
+		return None
+
+	otherParm = parm.getReferencedParm()
+
+	while otherParm != parm:
+		parm = otherParm
+
+	return otherParm
