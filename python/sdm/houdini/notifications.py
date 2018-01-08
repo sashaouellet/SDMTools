@@ -5,7 +5,6 @@ __version__ = 1.0.0
 __date__ = 12/10/17
 """
 
-from enum import Enum
 import logging
 import smtplib, base64
 from email.mime.text import MIMEText
@@ -15,7 +14,7 @@ from sdm.utils import splitByCamelCase
 
 logger = logging.getLogger(__name__)
 
-class NotificationType(Enum):
+class NotificationType():
 	ROP_COMPLETE = 1
 
 def notifyUser(msg, data={}):

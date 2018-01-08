@@ -10,11 +10,10 @@ import sdm.houdini
 import hou
 
 import os, json, re, logging
-from enum import Enum
 
 logger = logging.getLogger(__name__)
 
-class ValidationType(Enum):
+class ValidationType():
 	EMAIL = 1
 
 class SettingsFile():

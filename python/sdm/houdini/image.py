@@ -11,9 +11,7 @@ import os
 import imghdr
 import subprocess
 
-from enum import Enum
-
-class ImageType(Enum):
+class ImageType():
 	EXR = '.exr'
 	RAT = '.rat'
 	HDR = '.hdr'
@@ -21,7 +19,7 @@ class ImageType(Enum):
 	PNG = '.png'
 	TIFF = '.tiff'
 
-ALTERNATE_IMAGE_EXTS = [ImageType.RAT.value, ImageType.HDR.value]
+ALTERNATE_IMAGE_EXTS = [ImageType.RAT, ImageType.HDR]
 
 def convertImage(file, maxDim, scale, ext):
 	"""Converts the given absolute file path to the given extension, using the icp command from $HFS/bin
@@ -59,7 +57,7 @@ def convertImage(file, maxDim, scale, ext):
 	args.append('-s')
 	args.append(str(float(scale * 100)))
 
-	newPath = os.path.splitext(file)[0] + ext.value
+	newPath = os.path.splitext(file)[0] + ext
 
 	args.append(file)
 	args.append(newPath)
