@@ -1,7 +1,7 @@
 import os, glob
 import logging
 import hou
-import urllib, json, zipfile, StringIO, uuid, shutil, base64
+import urllib, urllib2, json, zipfile, StringIO, uuid, shutil, base64
 from datetime import datetime
 import smtplib
 
