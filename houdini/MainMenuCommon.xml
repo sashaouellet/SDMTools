@@ -36,6 +36,16 @@ main()
 			</scriptItem>
 		</subMenu>
 		<subMenu id="render_menu">
+			<scriptItem id="floating_ipr">
+				<label>Open Floating Render View</label>
+				<insertBefore>render_create_submenu</insertBefore>
+				<scriptCode>
+<![CDATA[
+from sdm.houdini.desktop import createFloatingIPR
+createFloatingIPR()
+]]>
+				</scriptCode>
+		        </scriptItem>
 			<scriptItem id="sdm_upload">
 				<label>Upload to SDM Farm</label>
 				<insertAfter>render_pre_flight</insertAfter>
