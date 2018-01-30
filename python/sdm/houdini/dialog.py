@@ -221,10 +221,10 @@ def checkForUpdates(silent=False):
 			if version:
 				logger.info('Installing {}'.format(selectedTag))
 
-				targetDir =  os.path.join(os.path.split(os.path.dirname(sdmtools.folder))[0], 'temp_{}'.format(uuid.uuid4())) # temp SDMTools base directory - to rename after deleting old one
+				targetDir =  os.path.join(os.path.split(os.path.dirname(sdm.houdini.folder))[0], 'temp_{}'.format(uuid.uuid4())) # temp SDMTools base directory - to rename after deleting old one
 				oldSettings = '{}'
 
-				for dirpath, dirs, files in os.walk(os.path.dirname(sdmtools.folder)):
+				for dirpath, dirs, files in os.walk(os.path.dirname(sdm.houdini.folder)):
 					for f in files:
 						if f == 'settings.json':
 							oldSettings = json.load(open(os.path.join(dirpath, f)))
@@ -262,7 +262,7 @@ def checkForUpdates(silent=False):
 
 									json.dump(mergedJson, targetSettings, sort_keys=True, indent=4, separators=(',', ': '))
 
-					oldFolder = os.path.dirname(sdmtools.folder)
+					oldFolder = os.path.dirname(sdm.houdini.folder)
 					shutil.rmtree(oldFolder) # Delete old folder
 					os.rename(targetDir, oldFolder)
 
